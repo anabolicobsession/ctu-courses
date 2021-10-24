@@ -28,7 +28,7 @@ for ARG_IDX in $(seq 1 "$#"); do
   ARG="${*:$ARG_IDX:1}"
 
   if [[ "$ARG" = "$ARG_TEST" ]]; then
-    (( N_TESTS = $(ls -1q "$TEST_DIR" | wc -l) / 2 ))
+    (( N_TESTS = $(ls -1q "$TEST_DIR/pub"* | wc -l) / 2 ))
 
     if [[ "$ARG_IDX" = "$#" ]]; then
       ALL_TESTS_PASSED=1
@@ -41,6 +41,7 @@ for ARG_IDX in $(seq 1 "$#"); do
     fi
 
     for i in $(seq "$LOOP_START" "$LOOP_END"); do
+      echo "${N_TESTS}"
       NUM=$(add_leading_zeros "$i" "${#N_TESTS}")
       TEST="pub$NUM"
 
