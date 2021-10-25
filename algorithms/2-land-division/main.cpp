@@ -137,10 +137,10 @@ State solve(State &st) {
     State best_st = st;
     for (int y = st.grid_n_rows - 1; y >= 0; --y) {
         for (int x = st.grid_n_cols - 1; x >= 0; --x) {
+            if (st.grid[y][x] == GRID_CELL_BORDER) break;
 
             if ((x == 0 || st.grid[y][x - 1] == GRID_CELL_BORDER) &&
-                (y == 0 || st.grid[y - 1][x] == GRID_CELL_BORDER) &&
-                st.grid[y][x] != GRID_CELL_LAND && st.grid[y][x] != GRID_CELL_LAND) {
+                (y == 0 || st.grid[y - 1][x] == GRID_CELL_BORDER)) {
 
                 for (int l = 0; l < st.lands_n_rows; ++l) {
                     State new_st = st;
