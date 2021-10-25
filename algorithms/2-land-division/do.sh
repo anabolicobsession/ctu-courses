@@ -8,8 +8,8 @@ EXEC="hw2"
 ARG_MAKE="make"
 
 ARG_ZIP="zip"
-ZIP_TARGET="alg01"
-ZIP_FILES=("main.cpp" "CMakeLists.txt") # use double quotes if any file contains whitespaces
+ZIP_TARGET="alg02"
+ZIP_FILES=("main.cpp") # use double quotes if any file contains whitespaces
 ZIP_EXTENSION=".tgz"
 
 ARG_CLEAN="clean"
