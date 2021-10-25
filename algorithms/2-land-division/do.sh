@@ -18,30 +18,43 @@ CLEAN_FILES=(*"$ZIP_EXTENSION")
 add_leading_zeros() {
   ZEROS=""
   (( N_ZEROS = "$2" - "${#1}" ))
-  for i in $(seq 1 "$N_ZEROS"); do
+  for i in $(seq 1 "$N_ZEROS")
+  do
     ZEROS+="0"
   done
   echo "$ZEROS$1"
 }
 
-for ARG_IDX in $(seq 1 "$#"); do
+for ARG_IDX in $(seq 1 "$#")
+do
   ARG="${*:$ARG_IDX:1}"
 
-  if [[ "$ARG" = "$ARG_TEST" ]]; then
+  if [[ "$ARG" = "$ARG_TEST" ]]
+  then
     (( N_TESTS = $(ls -1q "$TEST_DIR/pub"* | wc -l) / 2 ))
+    LAST_ARG_IDX="$#"
+    (( PENULTIMATE_ARG_IDX = "$LAST_ARG_IDX" - 1 ))
+    ALL_TESTS_PASSED=1
 
-    if [[ "$ARG_IDX" = "$#" ]]; then
-      ALL_TESTS_PASSED=1
+    if [[ "$ARG_IDX" = "$#" ]]
+    then
       LOOP_START=1
       LOOP_END="$N_TESTS"
-    else
-      (( NEXT_ARG_IDX = ARG_IDX + 1 ))
-      LOOP_START="${*:$NEXT_ARG_IDX:1}"
+    elif [[ "$ARG_IDX" = "$PENULTIMATE_ARG_IDX" ]]
+    then
+      LOOP_START="${*:$LAST_ARG_IDX:1}"
       LOOP_END="$LOOP_START"
+    else
+      LOOP_START="${*:PENULTIMATE_ARG_IDX:1}"
+      LOOP_END="${*:LAST_ARG_IDX:1}"
     fi
+    N_TESTS_WERE_CARRIED_OUT=0
 
-    for i in $(seq "$LOOP_START" "$LOOP_END"); do
-      echo "${N_TESTS}"
+    START_TOTAL_TIME=$(date +%s.%N)
+    for i in $(seq "$LOOP_START" "$LOOP_END")
+    do
+      N_TESTS_WERE_CARRIED_OUT+=1
+
       NUM=$(add_leading_zeros "$i" "${#N_TESTS}")
       TEST="pub$NUM"
 
@@ -49,11 +62,9 @@ for ARG_IDX in $(seq 1 "$#"); do
       START_TIME=$(date +%s.%N)
       RECEIVED="$(./"$EXEC_DIR/$EXEC" < "$TEST_DIR/$TEST.in")"
       TIME=$(echo "$(date +%s.%N) - $START_TIME" | bc)
-      TOTAL_TIME+=("$TIME")
       EXPECTED="$(cat "$TEST_DIR/$TEST.out" | tr -d '\r')"
 
       echo "$RECEIVED"
-      echo "-"
       echo "$EXPECTED"
 
       if [[ "$RECEIVED" = "$EXPECTED" ]]
@@ -67,14 +78,19 @@ for ARG_IDX in $(seq 1 "$#"); do
 
       if [[ "$i" -lt "$LOOP_END" ]]
       then
-        echo "---"
+        echo ""
       fi
     done
+    TOTAL_TIME=$(echo "$(date +%s.%N) - $START_TOTAL_TIME" | bc)
 
-    if [[ "$ALL_TESTS_PASSED" = 1 ]]
+    if [[ "$N_TESTS_WERE_CARRIED_OUT" -gt 1 ]]
     then
       echo ""
-      echo "All tests passed"
+      printf "Total time: %.2fs\n" "$TOTAL_TIME"
+      if [[ "$ALL_TESTS_PASSED" = 1 ]]
+      then
+        echo "All tests passed"
+      fi
     fi
 
   elif [[ "$ARG" = "$ARG_MAKE" ]]; then
