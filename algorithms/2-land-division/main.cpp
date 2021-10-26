@@ -30,8 +30,9 @@ void print_matrix(const vector<vector<T>> &M) {
             if (abs(cell) > max_value) max_value = abs(cell);
         }
     }
+    max_value = max( { max_value, int(M.size() - 1), int(M[0].size() - 1) } );
 
-    int setw_value = int(to_string(max_value).length()) - int(sizeof(M[0][0]) == CHAR_SIZE);
+    int setw_value = int(to_string(max_value).length()) - int(sizeof(M[0][0]) == CHAR_SIZE) ;
     int n_rows = M.size(), n_cols = M[0].size();
     for (int y = -1; y < n_rows; ++y) {
         for (int x = -1; x < n_cols; ++x) {
@@ -73,7 +74,7 @@ public:
     vector<vector<int>> grid;
     vector<vector<int>> lands;
     int grid_n_rows, grid_n_cols;
-    int lands_n_rows, lands_n_cols;
+    int lands_n_rows;
 
     State(const matrix_t &grid, const matrix_t &lands) : profit(0) {
         this->grid = grid;
@@ -81,7 +82,6 @@ public:
         grid_n_cols = int(grid[0].size());
         this->lands = lands;
         lands_n_rows = int(lands.size());
-        lands_n_cols = int(lands[0].size());
         sort(this->lands.begin(), this->lands.end(), land_greater);
     }
 
@@ -131,7 +131,7 @@ public:
         return true;
     }
 
-    void print() {
+    void print() const {
         print_matrix(grid);
         cout << "Current profit: " << COLOR_GREEN << profit << COLOR_RESET << '\n';
         print_matrix(lands);
@@ -139,21 +139,7 @@ public:
     }
 };
 
-const int DEBUG =     0;
-const int RECURSION = 0;
-const int RESULT =    0;
-long recursion_counter = 0;
-
 State solve(State &st) {
-
-    if (RECURSION) {
-        recursion_counter++;
-    }
-
-    if (DEBUG) {
-        st.print();
-    }
-
     State best_st = st;
     for (int y = st.grid_n_rows - 1; y >= 0; --y) {
         for (int x = st.grid_n_cols - 1; x >= 0; --x) {
@@ -176,7 +162,8 @@ State solve(State &st) {
                         }
                     }
 
-                    if (enable_greedy_pruning && best_land_found && land_calculate_area(st.lands[l]) != best_found_land_area) {
+                    if (enable_greedy_pruning && best_land_found &&
+                        land_calculate_area(st.lands[l]) != best_found_land_area) {
                         break;
                     }
 
@@ -217,20 +204,7 @@ int main() {
 
     State start_state = State(grid, lands);
     State final_state = solve(start_state);
-
-    if (DEBUG) {
-        final_state.print();
-    } if (RESULT) {
-        start_state.print();
-        final_state.print();
-    } else {
-        cout << final_state.get_profit() << '\n';
-    }
-
-    if (RECURSION) {
-        cout << "Recursions: " << recursion_counter << '\n';
-    }
-
+    cout << final_state.get_profit() << '\n';
 
     return 0;
 }
