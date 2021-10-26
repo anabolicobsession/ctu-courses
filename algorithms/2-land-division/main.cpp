@@ -9,6 +9,9 @@ using namespace std;
 #define COLOR_RED "\033[1m\033[31m"
 #define COLOR_GREEN "\033[1m\033[32m"
 
+const int DEBUG = 0;
+const int RECURSION = 0;
+
 const unsigned int CHAR_SIZE = 1;
 const int GRID_CELL_LAND = -1;
 const int GRID_CELL_BORDER = -2;
@@ -22,6 +25,8 @@ typedef vector<row_t> matrix_t;
 
 template <typename T>
 void print_matrix(const vector<vector<T>> &M) {
+    if (M.size() == 0) return;
+
     T max_value = numeric_limits<T>::min();
     for (const auto &row: M) {
         for (const auto &cell: row) {
@@ -55,8 +60,8 @@ void print_matrix(const vector<vector<T>> &M) {
     }
 }
 
-bool compare_lands(const row_t &l1, const row_t &l2) {
-    return l1[LAND_HEIGHT_IDX] * l1[LAND_WIDTH_IDX] < l2[LAND_HEIGHT_IDX] * l2[LAND_WIDTH_IDX];
+bool lands_greater(const row_t &l1, const row_t &l2) {
+    return l1[LAND_HEIGHT_IDX] * l1[LAND_WIDTH_IDX] > l2[LAND_HEIGHT_IDX] * l2[LAND_WIDTH_IDX];
 }
 
 class State {
@@ -76,7 +81,7 @@ public:
         this->lands = lands;
         lands_n_rows = int(lands.size());
         lands_n_cols = int(lands[0].size());
-        sort(this->lands.begin(), this->lands.end(), compare_lands);
+        sort(this->lands.begin(), this->lands.end(), lands_greater);
     }
 
     unsigned long get_profit() const {
@@ -126,14 +131,25 @@ public:
     }
 
     void print() {
-        cout << "Current profit: " << profit << '\n';
         print_matrix(grid);
+        cout << "Current profit: " << COLOR_GREEN << profit << COLOR_RESET << '\n';
         print_matrix(lands);
         cout << '\n';
     }
 };
 
+long recursion_counter = 0;
+
 State solve(State &st) {
+
+    if (RECURSION) {
+        recursion_counter++;
+    }
+
+    if (DEBUG) {
+        st.print();
+    }
+
     State best_st = st;
     for (int y = st.grid_n_rows - 1; y >= 0; --y) {
         for (int x = st.grid_n_cols - 1; x >= 0; --x) {
@@ -142,9 +158,13 @@ State solve(State &st) {
             if ((x == 0 || st.grid[y][x - 1] == GRID_CELL_BORDER) &&
                 (y == 0 || st.grid[y - 1][x] == GRID_CELL_BORDER)) {
 
-                for (int l = 0; l < st.lands_n_rows; ++l) {
+                bool land_found = false;
+                for (int l = 0; l < st.lands_n_rows && !land_found; ++l) {
+//                for (int l = 0; l < st.lands_n_rows; ++l) {
+
                     State new_st = st;
                     if (new_st.try_to_add_land(l, x, y)) {
+                        land_found = true;
                         State solution_st = solve(new_st);
                         if (solution_st.get_profit() > best_st.get_profit()) best_st = solution_st;
                     }
@@ -177,7 +197,17 @@ int main() {
 
     State start_state = State(grid, lands);
     State final_state = solve(start_state);
-    cout << final_state.get_profit() << '\n';
+
+    if (DEBUG) {
+        final_state.print();
+    } else {
+        cout << final_state.get_profit() << '\n';
+    }
+
+    if (RECURSION) {
+        cout << "Recursions: " << recursion_counter << '\n';
+    }
+
 
     return 0;
 }

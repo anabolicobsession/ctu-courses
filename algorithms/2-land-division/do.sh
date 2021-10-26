@@ -1,5 +1,9 @@
 #!/bin/bash
 
+COLOR_RESET="\033[0m"
+COLOR_RED="\033[1m\033[31m"
+COLOR_GREEN="\033[1m\033[32m"
+
 ARG_TEST="test"
 TEST_DIR="datapub"
 EXEC_DIR="cmake-build-debug"
@@ -31,15 +35,14 @@ do
 
   if [[ "$ARG" = "$ARG_TEST" ]]
   then
-    (( N_TESTS = $(ls -1q "$TEST_DIR/pub"* | wc -l) / 2 ))
+    (( N_TESTS_IN_DIR = $(ls -1q "$TEST_DIR/pub"* | wc -l) / 2 ))
     LAST_ARG_IDX="$#"
     (( PENULTIMATE_ARG_IDX = "$LAST_ARG_IDX" - 1 ))
-    ALL_TESTS_PASSED=1
 
     if [[ "$ARG_IDX" = "$#" ]]
     then
       LOOP_START=1
-      LOOP_END="$N_TESTS"
+      LOOP_END="$N_TESTS_IN_DIR"
     elif [[ "$ARG_IDX" = "$PENULTIMATE_ARG_IDX" ]]
     then
       LOOP_START="${*:$LAST_ARG_IDX:1}"
@@ -48,14 +51,12 @@ do
       LOOP_START="${*:PENULTIMATE_ARG_IDX:1}"
       LOOP_END="${*:LAST_ARG_IDX:1}"
     fi
-    N_TESTS_WERE_CARRIED_OUT=0
+    N_TESTS_PASSED=0
 
     START_TOTAL_TIME=$(date +%s.%N)
     for i in $(seq "$LOOP_START" "$LOOP_END")
     do
-      N_TESTS_WERE_CARRIED_OUT+=1
-
-      NUM=$(add_leading_zeros "$i" "${#N_TESTS}")
+      NUM=$(add_leading_zeros "$i" "${#N_TESTS_IN_DIR}")
       TEST="pub$NUM"
 
       echo "Running $TEST..."
@@ -69,12 +70,15 @@ do
 
       if [[ "$RECEIVED" = "$EXPECTED" ]]
       then
-        printf "Passed: %.2fs\n" "$TIME"
+        (( N_TESTS_PASSED++ ))
+        echo -ne "$COLOR_GREEN"
+        echo -n "Passed"
       else
-        printf "Failed: %.2fs\n" "$TIME"
-        ALL_TESTS_PASSED=0
-        break
+        echo -ne "$COLOR_RED"
+        echo -n "Failed"
       fi
+      echo -ne "$COLOR_RESET"
+      printf " (%.1fs)\n" "$TIME"
 
       if [[ "$i" -lt "$LOOP_END" ]]
       then
@@ -83,14 +87,21 @@ do
     done
     TOTAL_TIME=$(echo "$(date +%s.%N) - $START_TOTAL_TIME" | bc)
 
-    if [[ "$N_TESTS_WERE_CARRIED_OUT" -gt 1 ]]
+    (( N_TESTS = LOOP_END - LOOP_START + 1 ))
+    if [[ "$N_TESTS" -gt 1 ]]
     then
       echo ""
-      printf "Total time: %.2fs\n" "$TOTAL_TIME"
-      if [[ "$ALL_TESTS_PASSED" = 1 ]]
+      echo -n "Tests passed: "
+
+      if [[ "$N_TESTS_PASSED" = "$N_TESTS" ]]
       then
-        echo "All tests passed"
+        echo -ne "$COLOR_GREEN"
+      else
+        echo -ne "$COLOR_RED"
       fi
+      echo -ne "$N_TESTS_PASSED/$N_TESTS $COLOR_RESET"
+
+      printf "(%.1fs)\n" "$TOTAL_TIME"
     fi
 
   elif [[ "$ARG" = "$ARG_MAKE" ]]; then
