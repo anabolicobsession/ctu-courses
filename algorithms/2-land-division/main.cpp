@@ -9,13 +9,10 @@ using namespace std;
 #define COLOR_RED "\033[1m\033[31m"
 #define COLOR_GREEN "\033[1m\033[32m"
 
-const int DEBUG = 0;
-const int RECURSION = 0;
-
 const unsigned int CHAR_SIZE = 1;
 const int GRID_CELL_LAND = -1;
 const int GRID_CELL_BORDER = -2;
-const unsigned int N_LAND_PARAMETERS = 3;
+const int N_LAND_PARAMETERS = 3;
 const unsigned int LAND_HEIGHT_IDX = 0;
 const unsigned int LAND_WIDTH_IDX = 1;
 const unsigned int LAND_AMOUNT_IDX = 2;
@@ -60,17 +57,21 @@ void print_matrix(const vector<vector<T>> &M) {
     }
 }
 
-bool lands_greater(const row_t &l1, const row_t &l2) {
-    return l1[LAND_HEIGHT_IDX] * l1[LAND_WIDTH_IDX] > l2[LAND_HEIGHT_IDX] * l2[LAND_WIDTH_IDX];
+int land_calculate_area(const row_t &l) {
+    return l[LAND_WIDTH_IDX] * l[LAND_HEIGHT_IDX];
+}
+
+bool land_greater(const row_t &l1, const row_t &l2) {
+    return land_calculate_area(l1) > land_calculate_area(l2);
 }
 
 class State {
 private:
     unsigned long profit;
-    vector<vector<int>> lands;
 
 public:
     vector<vector<int>> grid;
+    vector<vector<int>> lands;
     int grid_n_rows, grid_n_cols;
     int lands_n_rows, lands_n_cols;
 
@@ -81,7 +82,7 @@ public:
         this->lands = lands;
         lands_n_rows = int(lands.size());
         lands_n_cols = int(lands[0].size());
-        sort(this->lands.begin(), this->lands.end(), lands_greater);
+        sort(this->lands.begin(), this->lands.end(), land_greater);
     }
 
     unsigned long get_profit() const {
@@ -138,6 +139,9 @@ public:
     }
 };
 
+const int DEBUG =     0;
+const int RECURSION = 0;
+const int RESULT =    0;
 long recursion_counter = 0;
 
 State solve(State &st) {
@@ -158,13 +162,29 @@ State solve(State &st) {
             if ((x == 0 || st.grid[y][x - 1] == GRID_CELL_BORDER) &&
                 (y == 0 || st.grid[y - 1][x] == GRID_CELL_BORDER)) {
 
-                bool land_found = false;
-                for (int l = 0; l < st.lands_n_rows && !land_found; ++l) {
-//                for (int l = 0; l < st.lands_n_rows; ++l) {
+                bool best_land_found = false;
+                int best_found_land_area = 0;
+                for (int l = 0; l < st.lands_n_rows; ++l) {
+
+                    // if the end is far, try to prune the decision tree as much as possible,
+                    // otherwise also try with second land
+                    bool enable_greedy_pruning = true;
+                    if (st.lands_n_rows >= 2 && l <= 1) {
+                        if (x + 2 * st.lands[1][LAND_WIDTH_IDX] + 1 >= st.grid_n_cols ||
+                            y + 2 * st.lands[1][LAND_HEIGHT_IDX] + 1 >= st.grid_n_rows) {
+                            enable_greedy_pruning = false;
+                        }
+                    }
+
+                    if (enable_greedy_pruning && best_land_found && land_calculate_area(st.lands[l]) != best_found_land_area) {
+                        break;
+                    }
 
                     State new_st = st;
                     if (new_st.try_to_add_land(l, x, y)) {
-                        land_found = true;
+                        best_land_found = true;
+                        best_found_land_area = land_calculate_area(st.lands[l]);
+
                         State solution_st = solve(new_st);
                         if (solution_st.get_profit() > best_st.get_profit()) best_st = solution_st;
                     }
@@ -199,6 +219,9 @@ int main() {
     State final_state = solve(start_state);
 
     if (DEBUG) {
+        final_state.print();
+    } if (RESULT) {
+        start_state.print();
         final_state.print();
     } else {
         cout << final_state.get_profit() << '\n';
