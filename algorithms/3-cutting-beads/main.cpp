@@ -28,6 +28,12 @@ int get_number_from_stdin() {
     return m != 1 ? num : EOF;
 }
 
+class Node {
+private:
+    int value;
+    int id;
+};
+
 int main() {
     return 0;
 }
