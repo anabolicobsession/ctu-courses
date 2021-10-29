@@ -11,7 +11,7 @@ const int N_EDGE_NODES = 2;
 const int N_NODE_NEIGHBORS = 3;
 const int NEIGHBOR_DOESNT_EXIST = -1;
 
-typedef int node_id_t;
+typedef int node_idx_t;
 
 /**
  * Read 1 non-negative integer from standard input ignoring any non-digit characters.
@@ -39,7 +39,7 @@ int get_integer_from_stdin() {
 
 class BinaryTree {
 private:
-    vector<array<node_id_t, N_NODE_NEIGHBORS>> table;
+    vector<array<node_idx_t, N_NODE_NEIGHBORS>> neighbors_table;
     int n_nodes, n_red_nodes;
 
 public:
@@ -49,21 +49,21 @@ public:
         n_nodes = get_integer_from_stdin();
         n_red_nodes = get_integer_from_stdin();
 
-        table.reserve(n_nodes);
+        neighbors_table.reserve(n_nodes);
         for (int i = 0; i < n_nodes; ++i) {
             for (int j = 0; j < N_NODE_NEIGHBORS; ++j) {
-                table[i][j] = NEIGHBOR_DOESNT_EXIST;
+                neighbors_table[i][j] = NEIGHBOR_DOESNT_EXIST;
             }
         }
 
         for (int i = 0; i < n_nodes - 1; ++i) {
             // convert to indexing from zero
-            array<node_id_t, N_EDGE_NODES> edge_nodes = {get_integer_from_stdin() - 1, get_integer_from_stdin() - 1};
+            array<node_idx_t, N_EDGE_NODES> edge_nodes = {get_integer_from_stdin() - 1, get_integer_from_stdin() - 1};
 
             for (int j = 0; j < N_EDGE_NODES; ++j) {
                 int k = 0;
-                while (table[edge_nodes[j]][k] != NEIGHBOR_DOESNT_EXIST) ++k;
-                table[edge_nodes[j]][k] = edge_nodes[N_EDGE_NODES - j - 1];
+                while (neighbors_table[edge_nodes[j]][k] != NEIGHBOR_DOESNT_EXIST) ++k;
+                neighbors_table[edge_nodes[j]][k] = edge_nodes[N_EDGE_NODES - j - 1];
             }
         }
     }
@@ -73,13 +73,12 @@ public:
         for (int i = 0; i < n_nodes; ++i) {
             cout << "[" << setw(setw_value) << setfill(' ') << i << "]";
             for (int j = 0; j < N_NODE_NEIGHBORS; ++j) {
-                if (table[i][j] != NEIGHBOR_DOESNT_EXIST) cout << ' ' << setw(setw_value) << setfill(' ') << table[i][j];
+                if (neighbors_table[i][j] != NEIGHBOR_DOESNT_EXIST) cout << ' ' << setw(setw_value) << setfill(' ') << neighbors_table[i][j];
                 else cout << ' ' << setw(setw_value) << setfill(' ') << ' ';
             }
             cout << '\n';
         }
     }
-
 };
 
 int main() {
