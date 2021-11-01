@@ -1,5 +1,6 @@
 #include <iostream>
 #include <vector>
+#include <iomanip>
 
 using namespace std;
 
@@ -13,7 +14,7 @@ const int INT_MAX_LEN = 10;
  */
 int get_integer_from_stdin() {
     unsigned char str[INT_MAX_LEN];
-    int c = 0, i = 0;
+    int c, i = 0;
 
     while ((c = getchar()) != EOF && !isdigit(c));
     while (c != EOF && isdigit(c)) {
@@ -29,6 +30,36 @@ int get_integer_from_stdin() {
 
     return m != 1 ? num : EOF;
 }
+
+class Caravan {
+public:
+    vector<vector<int>> adj_list;
+    int n_villages, n_routes, n_friendly_villages, saturation;
+
+    Caravan() : n_villages(0), n_routes(0), n_friendly_villages(0), saturation(0) {
+        cin >> n_villages >> n_routes >> n_friendly_villages >> saturation;
+
+        adj_list.resize(n_villages);
+        for (int i = 0; i < n_routes; ++i) {
+            adj_list.emplace_back();
+            int node1 = get_integer_from_stdin() - 1; // indexing from zero
+            int node2 = get_integer_from_stdin() - 1;
+            adj_list[node1].push_back(node2);
+            adj_list[node2].push_back(node1);
+        }
+    }
+
+    void print_adj_list() {
+        int setw_val = to_string(n_villages - 1).length();
+        for (int i = 0; i < n_villages; ++i) {
+            cout << '[' << setw(setw_val) << setfill(' ') << i + 1 << ']'; // indexing from one
+            for (int j = 0; j < adj_list[i].size(); ++j) {
+                cout << ' ' << setw(setw_val) << setfill(' ') << adj_list[i][j] + 1;
+            }
+            cout << '\n';
+        }
+    }
+};
 
 int main() {
 
