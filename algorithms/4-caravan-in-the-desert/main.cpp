@@ -7,6 +7,7 @@ const int INT_MAX_LEN = 10;
 
 /**
  * Read one non-negative integer from standard input, ignoring any non-digit characters.
+ * Useful for fast reading.
  *
  * @return integer if one was in input, EOF otherwise.
  */
