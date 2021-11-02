@@ -53,9 +53,7 @@ public:
         int setw_val = int(to_string(n_villages - 1).length());
         for (int i = 0; i < n_villages; ++i) {
             cout << '[' << setw(setw_val) << setfill(' ') << i + 1 << ']'; // indexing from one
-            for (int node : adj_list[i]) {
-                cout << ' ' << setw(setw_val) << setfill(' ') << node + 1;
-            }
+            for (int node: adj_list[i]) cout << ' ' << setw(setw_val) << setfill(' ') << node + 1;
             cout << '\n';
         }
     }
