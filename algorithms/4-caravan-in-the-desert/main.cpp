@@ -70,7 +70,7 @@ private:
         return a[IDX_N_PACKAGES] < b[IDX_N_PACKAGES] || a[IDX_N_PACKAGES] == b[IDX_N_PACKAGES] && a[IDX_SATURATION] > b[IDX_SATURATION];
     }
 
-    void run_modified_dfs(village_t v, vector<bool> &visited, vector<array<int, 2>> &best_params) const {
+    void run_dfs(village_t v, vector<bool> &visited, vector<array<int, 2>> &best_params) const {
         visited[v] = true;
 
         for (const auto &nv: adj_list[v]) {
@@ -78,9 +78,10 @@ private:
             if (params_better(params, best_params[nv])) best_params[nv] = params;
 
             if (!visited[nv] && best_params[nv][IDX_N_PACKAGES] == best_params[v][IDX_N_PACKAGES]) {
-                run_modified_dfs(nv, visited, best_params);
+                run_dfs(nv, visited, best_params);
             }
         }
+
     }
 
 public:
@@ -106,7 +107,7 @@ public:
         }
     }
 
-    void run_modified_bfs(village_t v= 0) const {
+    void run_bfs(village_t v= 0) const {
         queue<village_t> depth_queue, next_depth_queue;
         depth_queue.push(v);
 
@@ -116,30 +117,29 @@ public:
         vector<array<int, 2>> best_params(n_villages, {numeric_limits<int>::min(), numeric_limits<int>::max()});
         best_params[v] = {saturation, 0};
 
+
         while (!depth_queue.empty()) {
             v = depth_queue.front();
             depth_queue.pop();
+            bool dfs_ran = false;
 
             for (const auto &nv: adj_list[v]) {
-                array<int, 2> params = compute_params_for_new_village(best_params[v], v, nv);
-                if (params_better(params, best_params[nv])) {
-                    best_params[nv] = params;
-                }
+                params_t params = compute_params_for_new_village(best_params[v], v, nv);
+                if (params_better(params, best_params[nv])) best_params[nv] = params;
 
                 if (!visited[nv]) {
                     visited[nv] = true;
 
-                    if (best_params[v][IDX_SATURATION] != 0 && is_friendly(nv)) {
+                    if (!dfs_ran && !is_friendly(v) && !is_friendly(nv) && best_params[nv][IDX_SATURATION] != 0) {
+                        dfs_ran = true;
+                        vector<bool> visited_copy = visited;
+                        run_dfs(v, visited_copy, best_params);
+                    }
+
+                    if (best_params[v][IDX_SATURATION] > 0 && is_friendly(nv)) {
                         depth_queue.push(nv);
                     } else {
-                        vector<bool> visited_copy = visited;
-                        run_modified_dfs(v, visited_copy, best_params);
-
-                        if (best_params[v][IDX_SATURATION] != 0 && is_friendly(nv)) {
-                            depth_queue.push(nv);
-                        } else {
-                            next_depth_queue.push(nv);
-                        }
+                        next_depth_queue.push(nv);
                     }
                 }
             }
@@ -161,11 +161,9 @@ public:
     }
 };
 
-
-
 int main() {
     Desert ds;
-    ds.run_modified_bfs();
+    ds.run_bfs();
 
     return 0;
 }
