@@ -37,6 +37,7 @@ class Desert {
 private:
     typedef int village_t;
     typedef vector<village_t> villages_t;
+    typedef array<int, 2> params_t;
     const int IDX_SATURATION = 0, IDX_N_PACKAGES = 1;
 
     vector<villages_t> adj_list;
@@ -48,6 +49,38 @@ private:
 
     static int get_printable_village(const int &v) {
         return v + 1;
+    }
+
+    array<int, 2> compute_params_for_new_village(params_t params, const village_t &a, const village_t &b) const {
+        if (is_friendly(a)) {
+            if (!is_friendly(b)) params[IDX_SATURATION]--;
+        } else {
+            params[IDX_SATURATION]--;
+            if (params[IDX_SATURATION] == -1) {
+                params[IDX_SATURATION] = saturation;
+                params[IDX_N_PACKAGES]++;
+            }
+            if (is_friendly(b)) params[IDX_SATURATION] = saturation;
+        }
+
+        return params;
+    }
+
+    bool params_better(const params_t &a, const params_t &b) const {
+        return a[IDX_N_PACKAGES] < b[IDX_N_PACKAGES] || a[IDX_N_PACKAGES] == b[IDX_N_PACKAGES] && a[IDX_SATURATION] > b[IDX_SATURATION];
+    }
+
+    void run_modified_dfs(village_t v, vector<bool> &visited, vector<array<int, 2>> &best_params) const {
+        visited[v] = true;
+
+        for (const auto &nv: adj_list[v]) {
+            params_t params = compute_params_for_new_village(best_params[v], v, nv);
+            if (params_better(params, best_params[nv])) best_params[nv] = params;
+
+            if (!visited[nv] && best_params[nv][IDX_N_PACKAGES] == best_params[v][IDX_N_PACKAGES]) {
+                run_modified_dfs(nv, visited, best_params);
+            }
+        }
     }
 
 public:
@@ -73,22 +106,7 @@ public:
         }
     }
 
-    array<int, 2> compute_params_for_new_village(array<int, 2> params, const village_t &a, const village_t &b) const {
-        if (is_friendly(a)) {
-            if (!is_friendly(b)) params[IDX_SATURATION]--;
-        } else {
-            params[IDX_SATURATION]--;
-            if (params[IDX_SATURATION] == -1) {
-                params[IDX_SATURATION] = saturation;
-                params[IDX_N_PACKAGES]++;
-            }
-            if (is_friendly(b)) params[IDX_SATURATION] = saturation;
-        }
-
-        return params;
-    }
-
-    void modified_bfs(village_t v=0) const {
+    void run_modified_bfs(village_t v= 0) const {
         queue<village_t> depth_queue, next_depth_queue;
         depth_queue.push(v);
 
@@ -102,24 +120,27 @@ public:
             v = depth_queue.front();
             depth_queue.pop();
 
+            vector<bool> visited_copy = visited;
+            run_modified_dfs(v, visited_copy, best_params);
+
             for (const auto &nv: adj_list[v]) {
                 array<int, 2> params = compute_params_for_new_village(best_params[v], v, nv);
+                if (params_better(params, best_params[nv])) {
+                    best_params[nv] = params;
+                }
 
                 if (!visited[nv]) {
                     visited[nv] = true;
-
                     if (best_params[v][IDX_SATURATION] != 0 && is_friendly(nv)) {
                         depth_queue.push(nv);
                     } else {
-                        next_depth_queue.push(nv);
-                    }
-                }
 
-                if (params[IDX_N_PACKAGES] < best_params[nv][IDX_N_PACKAGES] || (params[IDX_N_PACKAGES] == best_params[nv][IDX_N_PACKAGES] &&
-                                                                                 params[IDX_SATURATION] > best_params[nv][IDX_SATURATION])) {
-//                    cout << "Found new best params for village " << setw(2) << setfill(' ') << get_printable_village(nv);
-//                    cout << ": " << params[IDX_SATURATION] << "/" << params[IDX_N_PACKAGES] << '\n';
-                    best_params[nv] = params;
+                        if (best_params[v][IDX_SATURATION] != 0 && is_friendly(nv)) {
+                            depth_queue.push(nv);
+                        } else {
+                            next_depth_queue.push(nv);
+                        }
+                    }
                 }
             }
 
@@ -144,7 +165,7 @@ public:
 
 int main() {
     Desert ds;
-    ds.modified_bfs();
+    ds.run_modified_bfs();
 
     return 0;
 }
