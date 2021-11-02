@@ -50,11 +50,11 @@ public:
     }
 
     void print_adj_list() {
-        int setw_val = to_string(n_villages - 1).length();
+        int setw_val = int(to_string(n_villages - 1).length());
         for (int i = 0; i < n_villages; ++i) {
             cout << '[' << setw(setw_val) << setfill(' ') << i + 1 << ']'; // indexing from one
-            for (int j = 0; j < adj_list[i].size(); ++j) {
-                cout << ' ' << setw(setw_val) << setfill(' ') << adj_list[i][j] + 1;
+            for (int node : adj_list[i]) {
+                cout << ' ' << setw(setw_val) << setfill(' ') << node + 1;
             }
             cout << '\n';
         }
