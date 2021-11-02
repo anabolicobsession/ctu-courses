@@ -1,6 +1,8 @@
 #include <iostream>
 #include <vector>
 #include <iomanip>
+#include <queue>
+#include <limits>
 
 using namespace std;
 
@@ -31,35 +33,118 @@ int get_integer_from_stdin() {
     return m != 1 ? num : EOF;
 }
 
-class Caravan {
-public:
-    vector<vector<int>> adj_list;
+class Desert {
+private:
+    typedef int village_t;
+    typedef vector<village_t> villages_t;
+    const int IDX_SATURATION = 0, IDX_N_PACKAGES = 1;
+
+    vector<villages_t> adj_list;
     int n_villages, n_routes, n_friendly_villages, saturation;
 
-    Caravan() : n_villages(0), n_routes(0), n_friendly_villages(0), saturation(0) {
+    bool is_friendly(const int &v) const {
+        return v < n_friendly_villages;
+    }
+
+    static int get_printable_village(const int &v) {
+        return v + 1;
+    }
+
+public:
+    Desert() : n_villages(0), n_routes(0), n_friendly_villages(0), saturation(0) {
         cin >> n_villages >> n_routes >> n_friendly_villages >> saturation;
 
         adj_list.resize(n_villages);
         for (int i = 0; i < n_routes; ++i) {
             adj_list.emplace_back();
-            int node1 = get_integer_from_stdin() - 1; // indexing from zero
-            int node2 = get_integer_from_stdin() - 1;
-            adj_list[node1].push_back(node2);
-            adj_list[node2].push_back(node1);
+            village_t v1 = get_integer_from_stdin() - 1; // indexing from zero
+            village_t v2 = get_integer_from_stdin() - 1;
+            adj_list[v1].push_back(v2);
+            adj_list[v2].push_back(v1);
         }
     }
 
-    void print_adj_list() {
+    void print_adj_list() const {
         int setw_val = int(to_string(n_villages - 1).length());
-        for (int i = 0; i < n_villages; ++i) {
-            cout << '[' << setw(setw_val) << setfill(' ') << i + 1 << ']'; // indexing from one
-            for (int node: adj_list[i]) cout << ' ' << setw(setw_val) << setfill(' ') << node + 1;
+        for (int village = 0; village < n_villages; ++village) {
+            cout << '[' << setw(setw_val) << setfill(' ') << get_printable_village(village) << ']'; // indexing from one
+            for (int neighboring_village: adj_list[village]) cout << ' ' << setw(setw_val) << setfill(' ') << get_printable_village(neighboring_village);
             cout << '\n';
         }
     }
+
+    array<int, 2> compute_params_for_new_village(array<int, 2> params, const village_t &a, const village_t &b) const {
+        if (is_friendly(a)) {
+            if (!is_friendly(b)) params[IDX_SATURATION]--;
+        } else {
+            params[IDX_SATURATION]--;
+            if (params[IDX_SATURATION] == -1) {
+                params[IDX_SATURATION] = saturation;
+                params[IDX_N_PACKAGES]++;
+            }
+            if (is_friendly(b)) params[IDX_SATURATION] = saturation;
+        }
+
+        return params;
+    }
+
+    void modified_bfs(village_t v=0) const {
+        queue<village_t> depth_queue, next_depth_queue;
+        depth_queue.push(v);
+
+        vector<bool> visited(n_villages, false);
+        visited[v] = true;
+
+        vector<array<int, 2>> best_params(n_villages, {numeric_limits<int>::min(), numeric_limits<int>::max()});
+        best_params[v] = {saturation, 0};
+
+        while (!depth_queue.empty()) {
+            v = depth_queue.front();
+            depth_queue.pop();
+
+            for (const auto &nv: adj_list[v]) {
+                array<int, 2> params = compute_params_for_new_village(best_params[v], v, nv);
+
+                if (!visited[nv]) {
+                    visited[nv] = true;
+
+                    if (best_params[v][IDX_SATURATION] != 0 && is_friendly(nv)) {
+                        depth_queue.push(nv);
+                    } else {
+                        next_depth_queue.push(nv);
+                    }
+                }
+
+                if (params[IDX_N_PACKAGES] < best_params[nv][IDX_N_PACKAGES] || (params[IDX_N_PACKAGES] == best_params[nv][IDX_N_PACKAGES] &&
+                                                                                 params[IDX_SATURATION] > best_params[nv][IDX_SATURATION])) {
+//                    cout << "Found new best params for village " << setw(2) << setfill(' ') << get_printable_village(nv);
+//                    cout << ": " << params[IDX_SATURATION] << "/" << params[IDX_N_PACKAGES] << '\n';
+                    best_params[nv] = params;
+                }
+            }
+
+            if (depth_queue.empty()) {
+                depth_queue = next_depth_queue;
+                next_depth_queue = queue<village_t>();
+            }
+        }
+
+        int max_n_packages = 0;
+        int zero_packages = 0;
+        for (int i = 0; i < n_villages; ++i) {
+            if (best_params[i][IDX_N_PACKAGES] > max_n_packages) max_n_packages = best_params[i][IDX_N_PACKAGES];
+            if (best_params[i][IDX_N_PACKAGES] == 0) zero_packages++;
+
+        }
+        cout << max_n_packages << ' ' << zero_packages << '\n';
+    }
 };
 
+
+
 int main() {
+    Desert ds;
+    ds.modified_bfs();
 
     return 0;
 }
