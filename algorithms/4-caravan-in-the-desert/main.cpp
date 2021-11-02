@@ -120,9 +120,6 @@ public:
             v = depth_queue.front();
             depth_queue.pop();
 
-            vector<bool> visited_copy = visited;
-            run_modified_dfs(v, visited_copy, best_params);
-
             for (const auto &nv: adj_list[v]) {
                 array<int, 2> params = compute_params_for_new_village(best_params[v], v, nv);
                 if (params_better(params, best_params[nv])) {
@@ -131,9 +128,12 @@ public:
 
                 if (!visited[nv]) {
                     visited[nv] = true;
+
                     if (best_params[v][IDX_SATURATION] != 0 && is_friendly(nv)) {
                         depth_queue.push(nv);
                     } else {
+                        vector<bool> visited_copy = visited;
+                        run_modified_dfs(v, visited_copy, best_params);
 
                         if (best_params[v][IDX_SATURATION] != 0 && is_friendly(nv)) {
                             depth_queue.push(nv);
