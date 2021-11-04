@@ -1,169 +1,261 @@
 #include <iostream>
 #include <vector>
-#include <iomanip>
 #include <queue>
 #include <limits>
+#include <functional>
+#include <iomanip>
+
+#include "utils.h"
 
 using namespace std;
 
-const int INT_MAX_LEN = 10;
 
-/**
- * Read one non-negative integer from standard input, ignoring any non-digit characters.
- * Useful for fast reading.
- *
- * @return integer if one was in input, EOF otherwise.
- */
-int get_integer_from_stdin() {
-    unsigned char str[INT_MAX_LEN];
-    int c, i = 0;
+class PriorityQueue {
+public:
+    typedef array<int, 2> elem_t;
+    enum accessor_t {VALUE, PRIORITY};
 
-    while ((c = getchar()) != EOF && !isdigit(c));
-    while (c != EOF && isdigit(c)) {
-        str[i++] = (unsigned char)c;
-        c = getchar();
-    }
-
-    int num = 0, m = 1;
-    while (i--) {
-        num += (str[i] - '0') * m;
-        m *= 10;
-    }
-
-    return m != 1 ? num : EOF;
-}
-
-class Desert {
 private:
-    typedef int village_t;
-    typedef vector<village_t> villages_t;
-    typedef array<int, 2> params_t;
-    const int IDX_SATURATION = 0, IDX_N_PACKAGES = 1;
-
-    vector<villages_t> adj_list;
-    int n_villages, n_routes, n_friendly_villages, saturation;
-
-    bool is_friendly(const int &v) const {
-        return v < n_friendly_villages;
-    }
-
-    static int get_printable_village(const int &v) {
-        return v + 1;
-    }
-
-    array<int, 2> compute_params_for_new_village(params_t params, const village_t &a, const village_t &b) const {
-        if (is_friendly(a)) {
-            if (!is_friendly(b)) params[IDX_SATURATION]--;
-        } else {
-            params[IDX_SATURATION]--;
-            if (params[IDX_SATURATION] == -1) {
-                params[IDX_SATURATION] = saturation;
-                params[IDX_N_PACKAGES]++;
-            }
-            if (is_friendly(b)) params[IDX_SATURATION] = saturation;
+    struct PriorityQueueCompare {
+        bool operator()(const elem_t &a, const elem_t &b)  {
+            return b[PRIORITY] < a[PRIORITY];
         }
+    };
 
-        return params;
-    }
-
-    bool params_better(const params_t &a, const params_t &b) const {
-        return a[IDX_N_PACKAGES] < b[IDX_N_PACKAGES] || a[IDX_N_PACKAGES] == b[IDX_N_PACKAGES] && a[IDX_SATURATION] > b[IDX_SATURATION];
-    }
-
-    void run_dfs(village_t v, vector<bool> &visited, vector<array<int, 2>> &best_params) const {
-        visited[v] = true;
-
-        for (const auto &nv: adj_list[v]) {
-            params_t params = compute_params_for_new_village(best_params[v], v, nv);
-            if (params_better(params, best_params[nv])) best_params[nv] = params;
-
-            if (!visited[nv] && best_params[nv][IDX_N_PACKAGES] == best_params[v][IDX_N_PACKAGES]) {
-                run_dfs(nv, visited, best_params);
-            }
-        }
-
-    }
+    priority_queue<elem_t, vector<elem_t>, PriorityQueueCompare> pq;
 
 public:
-    Desert() : n_villages(0), n_routes(0), n_friendly_villages(0), saturation(0) {
-        cin >> n_villages >> n_routes >> n_friendly_villages >> saturation;
+    PriorityQueue() = default;
 
-        adj_list.resize(n_villages);
-        for (int i = 0; i < n_routes; ++i) {
-            adj_list.emplace_back();
-            village_t v1 = get_integer_from_stdin() - 1; // indexing from zero
-            village_t v2 = get_integer_from_stdin() - 1;
-            adj_list[v1].push_back(v2);
-            adj_list[v2].push_back(v1);
+    void push(elem_t e) {
+        pq.push(e);
+    }
+
+    elem_t pop() {
+        elem_t e = pq.top();
+        pq.pop();
+        return e;
+    }
+
+    bool empty() {
+        return pq.empty();
+    }
+
+    void print() {
+        priority_queue<elem_t, vector<elem_t>, PriorityQueueCompare> pq_copy = pq;
+        bool was_empty = pq_copy.empty();
+        while (!pq_copy.empty()) {
+            cout << '(' << pq_copy.top()[VALUE] << ',' << pq_copy.top()[PRIORITY] << ')' << ' ';
+            pq_copy.pop();
+        }
+        if (!was_empty) cout << '\n';
+    }
+};
+
+
+class Graph {
+public:
+    typedef int node_t;
+    vector<vector<node_t>> adj_list;
+    int n_nodes, n_edges;
+
+    Graph() : n_nodes(0), n_edges(0) {}
+
+    void fill_with_edges(int number_of_nodes, int number_of_edges) {
+        n_nodes = number_of_nodes;
+        n_edges = number_of_edges;
+
+        adj_list.resize(n_nodes + 1);
+        for (int i = 0; i < n_edges; ++i) {
+            node_t a = get_integer_from_stdin();
+            node_t b = get_integer_from_stdin();
+            adj_list[a].push_back(b);
+            adj_list[b].push_back(a);
         }
     }
 
-    void print_adj_list() const {
-        int setw_val = int(to_string(n_villages - 1).length());
-        for (int village = 0; village < n_villages; ++village) {
-            cout << '[' << setw(setw_val) << setfill(' ') << get_printable_village(village) << ']'; // indexing from one
-            for (int neighboring_village: adj_list[village]) cout << ' ' << setw(setw_val) << setfill(' ') << get_printable_village(neighboring_village);
+    void print_adj_list() {
+        int setw_val = int(to_string(n_nodes).length());
+
+        for (int i = 1; i <= n_nodes; ++i) {
+            cout << '[' << setw(setw_val) << setfill(' ') << i << ']';
+            for (const auto &n: adj_list[i]) cout << ' ' << setw(setw_val) << setfill(' ') << n;
+            cout << '\n';
+        }
+    }
+};
+
+const int INT_INF = numeric_limits<int>::max();
+
+class SpecialGraph : public Graph {
+public:
+    typedef array<int, 2> values_t;
+    int n_special_nodes, n_moves_per_component;
+    vector<values_t> values;
+    enum values_accessor_t {MOVES_LEFT, COMPONENT};
+
+    SpecialGraph() : n_special_nodes(0), n_moves_per_component(0) {
+        cin >> n_nodes >> n_edges >> n_special_nodes >> n_moves_per_component;
+        fill_with_edges(n_nodes, n_edges);
+
+        values.resize(n_nodes + 1);
+        fill(values.begin(), values.end(), values_t{0, INT_INF});
+    }
+
+    bool is_special(node_t n) const {
+        return n <= n_special_nodes;
+    }
+
+    void explore_node(node_t n, node_t prev) {
+        values_t new_values = values[prev];
+
+//        cout << '(' << n << ',' << values[n][MOVES_LEFT] << ',' << values[n][COMPONENT] << ')';
+
+        if (!(is_special(prev) && is_special(n))) {
+            // decrease number of moves left
+            if (new_values[MOVES_LEFT] > 0) {
+                new_values[MOVES_LEFT]--;
+            } else {
+                new_values[MOVES_LEFT] = n_moves_per_component;
+                new_values[COMPONENT]++;
+            }
+
+            if (is_special(n)) new_values[MOVES_LEFT] = n_moves_per_component;
+        }
+
+        if (new_values[COMPONENT] < values[n][COMPONENT] ||
+            new_values[COMPONENT] == values[n][COMPONENT] && new_values[MOVES_LEFT] > values[n][MOVES_LEFT]) {
+            values[n] = new_values;
+        }
+
+//        cout << " -> (" << n << "," << values[n][MOVES_LEFT] << ',' << values[n][COMPONENT] << ")" << '\n';
+    }
+
+    bool in_same_component(node_t a, node_t b) {
+        return values[a][COMPONENT] == values[b][COMPONENT];
+    }
+
+    void print_values() {
+        int setw_val = 3;
+
+        for (int i = 1; i <= n_nodes; ++i) {
+            cout << '[' << setw(setw_val - 1) << setfill(' ') << i << ']';
+            for (const auto &v: values[i]) cout << ' ' << setw(setw_val) << setfill(' ') << (v < INT_INF ? to_string(v) : "inf");
             cout << '\n';
         }
     }
 
-    void run_bfs(village_t v= 0) const {
-        queue<village_t> depth_queue, next_depth_queue;
-        depth_queue.push(v);
+    int compute_node_priority(node_t node, vector<bool> visited) {
+        int moves = 0;
+        if (is_special(node)) return moves;
 
-        vector<bool> visited(n_villages, false);
-        visited[v] = true;
+        queue<node_t> q, next_q;
+        q.push(node);
 
-        vector<array<int, 2>> best_params(n_villages, {numeric_limits<int>::min(), numeric_limits<int>::max()});
-        best_params[v] = {saturation, 0};
+        moves++;
+        while (!q.empty()) {
+            if (moves > values[node][MOVES_LEFT]) break;
 
+            node_t n = q.front();
+            q.pop();
 
-        while (!depth_queue.empty()) {
-            v = depth_queue.front();
-            depth_queue.pop();
-            bool dfs_ran = false;
-
-            for (const auto &nv: adj_list[v]) {
-                params_t params = compute_params_for_new_village(best_params[v], v, nv);
-                if (params_better(params, best_params[nv])) best_params[nv] = params;
-
-                if (!visited[nv]) {
-                    visited[nv] = true;
-
-                    if (!dfs_ran && !is_friendly(v) && !is_friendly(nv) && best_params[nv][IDX_SATURATION] != 0) {
-                        dfs_ran = true;
-                        vector<bool> visited_copy = visited;
-                        run_dfs(v, visited_copy, best_params);
-                    }
-
-                    if (best_params[v][IDX_SATURATION] > 0 && is_friendly(nv)) {
-                        depth_queue.push(nv);
+            for (const auto &next: adj_list[n]) {
+                if (!visited[next]) {
+                    if (is_special(next)) {
+                        return moves;
                     } else {
-                        next_depth_queue.push(nv);
+                        visited[next] = true;
+                        next_q.push(next);
                     }
                 }
             }
 
-            if (depth_queue.empty()) {
-                depth_queue = next_depth_queue;
-                next_depth_queue = queue<village_t>();
+            if (q.empty()) {
+                moves++;
+                q = next_q;
+                next_q = queue<node_t>();
             }
         }
 
-        int max_n_packages = 0;
-        int zero_packages = 0;
-        for (int i = 0; i < n_villages; ++i) {
-            if (best_params[i][IDX_N_PACKAGES] > max_n_packages) max_n_packages = best_params[i][IDX_N_PACKAGES];
-            if (best_params[i][IDX_N_PACKAGES] == 0) zero_packages++;
+        return INT_INF - values[node][MOVES_LEFT];
+    }
 
+    void modified_bfs(Graph::node_t n) {
+        vector<bool> visited(1 + n_nodes, false);
+        visited[n] = true;
+
+        PriorityQueue pq, next_pq;
+        pq.push(PriorityQueue::elem_t{n, 0});
+
+        values[n][SpecialGraph::MOVES_LEFT] = n_moves_per_component;
+        values[n][SpecialGraph::COMPONENT] = 0;
+
+        int DEBUG = 0;
+
+        while(!pq.empty()) {
+            if (DEBUG) {
+                pq.print();
+//                print_values();
+//                cout << '\n';
+            }
+
+            bool best_node_found = false;
+
+            while (!best_node_found) {
+                PriorityQueue::elem_t pq_elem = pq.pop();
+                n = pq_elem[PriorityQueue::VALUE];
+                int real_priority = compute_node_priority(n, visited);
+
+                if (pq_elem[PriorityQueue::PRIORITY] == real_priority) {
+                    best_node_found = true;
+                } else {
+                    pq.push({pq_elem[PriorityQueue::VALUE], real_priority});
+                }
+            }
+
+            for (const auto &next: adj_list[n]) {
+                explore_node(next, n);
+
+                if (!visited[next]) {
+                    visited[next] = true;
+                    PriorityQueue::elem_t e{next, compute_node_priority(next, visited)};
+
+                    if (in_same_component(next, n)) {
+                        pq.push(e);
+                    } else {
+                        next_pq.push(e);
+                    }
+
+//                    if (DEBUG) cout << "+(" << e[PriorityQueue::VALUE] << "," << e[PriorityQueue::PRIORITY] << ")" << '\n';
+                }
+            }
+
+            if (pq.empty()) {
+                if (DEBUG && !pq.empty()) cout << "-------------------- New depth --------------------" << '\n';
+
+                pq = next_pq;
+                next_pq = PriorityQueue();
+            }
         }
-        cout << max_n_packages << ' ' << zero_packages << '\n';
+    }
+
+    void print_answer() {
+        int max_component = 0;
+        int nodes_in_first_component = 0;
+        for (int i = 1; i <= n_nodes; ++i) {
+            int c = values[i][COMPONENT];
+            if (c > max_component) max_component = c;
+            if (c == 0) nodes_in_first_component++;
+        }
+
+        cout << max_component << ' ' << nodes_in_first_component << '\n';
     }
 };
 
 int main() {
-    Desert ds;
-    ds.run_bfs();
+    SpecialGraph g;
+    g.modified_bfs(1);
+    g.print_answer();
 
     return 0;
 }
