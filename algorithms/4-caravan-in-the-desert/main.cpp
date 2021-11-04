@@ -85,21 +85,21 @@ public:
     }
 };
 
-const int INT_INF = numeric_limits<int>::max() / 2;
+const int INF = numeric_limits<int>::max() / 2;
 
 class SpecialGraph : public Graph {
 public:
     typedef array<int, 2> values_t;
-    int n_special_nodes, n_moves_per_component;
+    int n_special_nodes, moves_per_component;
     vector<values_t> values;
     enum values_accessor_t {MOVES_LEFT, COMPONENT};
 
-    SpecialGraph() : n_special_nodes(0), n_moves_per_component(0) {
-        cin >> n_nodes >> n_edges >> n_special_nodes >> n_moves_per_component;
+    SpecialGraph() : n_special_nodes(0), moves_per_component(0) {
+        cin >> n_nodes >> n_edges >> n_special_nodes >> moves_per_component;
         fill_with_edges(n_nodes, n_edges);
 
         values.resize(n_nodes + 1);
-        fill(values.begin(), values.end(), values_t{0, INT_INF});
+        fill(values.begin(), values.end(), values_t{0, INF});
     }
 
     bool is_special(node_t n) const {
@@ -116,11 +116,11 @@ public:
             if (new_values[MOVES_LEFT] > 0) {
                 new_values[MOVES_LEFT]--;
             } else {
-                new_values[MOVES_LEFT] = n_moves_per_component;
+                new_values[MOVES_LEFT] = moves_per_component;
                 new_values[COMPONENT]++;
             }
 
-            if (is_special(n)) new_values[MOVES_LEFT] = n_moves_per_component;
+            if (is_special(n)) new_values[MOVES_LEFT] = moves_per_component;
         }
 
         if (new_values[COMPONENT] < values[n][COMPONENT] ||
@@ -140,46 +140,33 @@ public:
 
         for (int i = 1; i <= n_nodes; ++i) {
             cout << '[' << setw(setw_val - 1) << setfill(' ') << i << ']';
-            for (const auto &v: values[i]) cout << ' ' << setw(setw_val) << setfill(' ') << (v < INT_INF ? to_string(v) : "inf");
+            for (const auto &v: values[i]) cout << ' ' << setw(setw_val) << setfill(' ') << (v < INF ? to_string(v) : "inf");
             cout << '\n';
         }
     }
 
-    int dist_nearest_special_node_in_component(node_t node, vector<bool> visited, node_t &s_node) {
-        int dist = 0;
-        s_node = node;
-        if (is_special(node)) return dist;
-        dist++;
-
-        queue<node_t> q, next_q;
-        q.push(node);
-
-        while (!q.empty()) {
-            if (dist > values[node][MOVES_LEFT]) break;
-            node_t n = q.front();
-            q.pop();
-
-            for (const auto &next: adj_list[n]) {
-                if (!visited[next]) {
-                    visited[next] = true;
-
-                    if (is_special(next)) {
-                        s_node = next;
-                        return dist;
-                    }
-
-                    next_q.push(next);
-                }
-            }
-
-            if (q.empty()) {
-                dist++;
-                q = next_q;
-                next_q = queue<node_t>();
-            }
+    static void print_queue(queue<node_t> q) {
+        node_t m = 0;
+        queue<node_t> qc = q;
+        while (!qc.empty()) {
+            if (qc.front() > m) m = qc.front();
+            qc.pop();
         }
 
-        return INT_INF;
+        int setw_val = int(to_string(m).length());
+        bool was_empty = q.empty();
+
+        while (!q.empty()) {
+            cout << setw(setw_val) << setfill(' ') << q.front() << ' ';
+            q.pop();
+        }
+
+        if (!was_empty) cout << '\n';
+    }
+
+    void set_values(node_t n, int moves_left, int component) {
+        values[n][MOVES_LEFT] = moves_left;
+        values[n][COMPONENT] = component;
     }
 
     vector<vector<node_t>> get_component_special_nodes() {
@@ -207,7 +194,7 @@ public:
                 vector<bool> visited(1 + n_nodes);
                 visited[component_node] = true;
 
-                int moves_left = n_moves_per_component - 1;
+                int moves_left = moves_per_component - 1;
 
                 while (!q.empty()) {
                     node_t n = q.front();
@@ -239,84 +226,98 @@ public:
         return csn;
     }
 
-    void print_queue(queue<node_t> q) {
-        bool was_empty = q.empty();
-        while (!q.empty()) {
-            cout << q.front() << ' ';
-            q.pop();
+    vector<node_t> find_special_nodes_in_component(node_t n, const vector<bool> &visited_init) {
+        vector<node_t> snc;
+        if (is_special(n)) snc.push_back(n);
+        if (values[n][MOVES_LEFT] == 0) return snc;
+
+        queue<node_t> cq;
+        cq.push(n);
+
+        vector<bool> cq_visited(n_nodes, false);
+        cq_visited[n] = true;
+
+        while (!cq.empty()) {
+            n = cq.front();
+            cq.pop();
+
+            queue<node_t> q, next_q;
+            q.push(n);
+
+            vector<bool> visited = visited_init;
+            int moves_left = is_special(n) ? moves_per_component - 1 : values[n][MOVES_LEFT] - 1;
+
+            while (!q.empty()) {
+                n = q.front();
+                q.pop();
+
+                for (const auto &next: adj_list[n]) {
+                    if (!visited[next]) {
+                        visited[next] = true;
+
+                        if (is_special(next) && !cq_visited[next]) {
+                            cq_visited[next] = true;
+                            snc.push_back(next);
+                            cq.push(next);
+                        }
+
+                        next_q.push(next);
+                    }
+                }
+
+                if (q.empty()) {
+                    if (moves_left == 0) break; else moves_left--;
+                    q = next_q;
+                    next_q = queue<node_t>();
+                }
+            }
         }
-        if (!was_empty) cout << '\n';
+
+        return snc;
+    }
+
+    queue<node_t> process_queue(queue<node_t> q, vector<bool> &visited) {
+        queue<node_t> new_q;
+        vector<bool> processed(n_nodes, false);
+
+        while (!q.empty()) {
+            node_t n = q.front();
+            q.pop();
+
+            vector<node_t> snc = find_special_nodes_in_component(n, visited);
+            if (!snc.empty()) {
+                for (const auto &sn: snc) {
+                    if (!processed[sn]) {
+                        processed[sn] = true;
+                        visited[sn] = true;
+
+                        set_values(sn, moves_per_component, values[n][COMPONENT]);
+                        new_q.push(sn);
+                    }
+                }
+            } else {
+                new_q.push(n);
+            }
+        }
+
+        return new_q;
     }
 
     void modified_bfs(Graph::node_t n) {
+        queue<node_t> q, next_q;
+        q.push(n);
+
         vector<bool> visited(1 + n_nodes, false);
         visited[n] = true;
 
-        queue<node_t> q, next_q, end_q;
-        q.push(n);
-
-        values[n][SpecialGraph::MOVES_LEFT] = n_moves_per_component;
-        values[n][SpecialGraph::COMPONENT] = 0;
-
-        vector<vector<node_t>> csn = get_component_special_nodes();
-        bool first_component = true;
-        bool is_end = false;
-        int comp = 0;
+        set_values(n, moves_per_component, 0);
+        q = process_queue(q, visited);
 
         int DEBUG = 0;
 
-        while (true) {
-            if ((q.empty() || first_component) && !is_end) {
-                if (next_q.empty() && !first_component) {
-                    is_end = true;
-
-                    while(!end_q.empty()) {
-                        q.push(end_q.front());
-                        end_q.pop();
-                    }
-
-                    goto leave_condition;
-                }
-
-                n = !first_component ? next_q.front() : q.front();
-                first_component = false;
-                node_t special_node;
-
-                if (dist_nearest_special_node_in_component(n, visited, special_node) != INT_INF) {
-                    int csn_idx = -1;
-                    for (int i = 0; i < csn.size(); ++i) {
-                        for (const auto &comp_node: csn[i]) {
-                            if (comp_node == special_node) {
-                                csn_idx = i;
-                                goto loop_end;
-                            }
-                        }
-                    }
-                    loop_end:;
-
-                    q = queue<node_t>();
-                    for (const auto &comp_node: csn[csn_idx]) {
-                        q.push(comp_node);
-                        values[comp_node][MOVES_LEFT] = n_moves_per_component;
-                        values[comp_node][COMPONENT] = comp;
-                        visited[comp_node] = true;
-                    }
-
-                    while (!next_q.empty()) {
-                        end_q.push(next_q.front());
-                        next_q.pop();
-                    }
-                } else {
-                    q = next_q;
-                }
-                next_q = queue<node_t>();
-
-                if (DEBUG && !q.empty()) cout << "-------------------- New depth --------------------" << '\n';
-            }
-
-            leave_condition:
-
+        while (!q.empty()) {
             if (DEBUG) print_queue(q);
+
             n = q.front();
             q.pop();
 
@@ -325,93 +326,24 @@ public:
 
                 if (!visited[next]) {
                     visited[next] = true;
-
-                    if (in_same_component(next, n) || is_end) {
-                        q.push(next);
-                    } else {
-                        next_q.push(next);
-                    }
-
-//                    if (DEBUG) cout << "+(" << e[PriorityQueue::VALUE] << "," << e[PriorityQueue::PRIORITY] << ")" << '\n';
+                    if (in_same_component(next, n)) q.push(next); else next_q.push(next);
                 }
             }
 
             if (q.empty()) {
-                if (next_q.empty() && end_q.empty()) {
-                    break;
+                q = process_queue(next_q, visited);
+                next_q = queue<node_t>();
+
+                if (DEBUG) {
+                    if (!q.empty()) {
+                        cout << "---------- New depth --------------------" << '\n';
+                    } else {
+                        cout << '\n';
+                    }
                 }
-                comp++;
             }
         }
 
-    }
-
-    void modified_bfs_xxx(Graph::node_t n) {
-        vector<bool> visited(1 + n_nodes, false);
-        visited[n] = true;
-
-        PriorityQueue pq, next_pq;
-        pq.push(PriorityQueue::elem_t{n, 0});
-
-        values[n][SpecialGraph::MOVES_LEFT] = n_moves_per_component;
-        values[n][SpecialGraph::COMPONENT] = 0;
-
-        int DEBUG = 0;
-
-        bool searching_special_nodes = true;
-
-        while(!pq.empty()) {
-            if (DEBUG) {
-                pq.print();
-//                print_values();
-//                cout << '\n';
-            }
-
-            bool best_node_found = false;
-            bool special_node_in_component_found;
-
-//            while (!best_node_found) {
-//                PriorityQueue::elem_t pq_elem = pq.pop();
-//                n = pq_elem[PriorityQueue::VALUE];
-////                int real_priority = compute_node_priority(n, visited, special_node_in_component_found);
-//
-//                if (pq_elem[PriorityQueue::PRIORITY] == real_priority) {
-//                    best_node_found = true;
-//                } else {
-//                    pq.push({pq_elem[PriorityQueue::VALUE], real_priority});
-//                }
-//            }
-//
-//            for (const auto &next: adj_list[n]) {
-//                explore_node(next, n);
-//
-//                if (!visited[next]) {
-//                    visited[next] = true;
-//
-//                    int priority = compute_node_priority(next, visited, special_node_in_component_found);
-//                    PriorityQueue::elem_t e{next, priority};
-//
-//                    if (in_same_component(next, n)) {
-//                        if (special_node_in_component_found && priority != 0) {
-//                            visited[next] = false;
-//                        }
-//                        pq.push(e);
-//                    } else {
-//                        next_pq.push(e);
-//                    }
-//
-////                    if (DEBUG) cout << "+(" << e[PriorityQueue::VALUE] << "," << e[PriorityQueue::PRIORITY] << ")" << '\n';
-//                }
-//            }
-
-            if (pq.empty()) {
-                if (DEBUG && !next_pq.empty()) cout << "-------------------- New depth --------------------" << '\n';
-
-                pq = next_pq;
-                next_pq = PriorityQueue();
-                searching_special_nodes = true;
-            }
-        }
     }
 
     void print_answer() {
@@ -424,6 +356,11 @@ public:
         }
 
         cout << max_component << ' ' << nodes_in_first_component << '\n';
+
+//        for (int i = 1; i < n_nodes; ++i) {
+//            if (values[i][COMPONENT] == INF) cout << i << ' ';
+//        }
+//        cout << '\n';
     }
 };
 
