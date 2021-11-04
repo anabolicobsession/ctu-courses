@@ -65,7 +65,7 @@ public:
         n_nodes = number_of_nodes;
         n_edges = number_of_edges;
 
-        adj_list.resize(n_nodes + 1);
+        adj_list.resize(1 + n_nodes);
         for (int i = 0; i < n_edges; ++i) {
             node_t a = get_integer_from_stdin();
             node_t b = get_integer_from_stdin();
@@ -85,7 +85,7 @@ public:
     }
 };
 
-const int INT_INF = numeric_limits<int>::max();
+const int INT_INF = numeric_limits<int>::max() / 2;
 
 class SpecialGraph : public Graph {
 public:
@@ -124,7 +124,7 @@ public:
         }
 
         if (new_values[COMPONENT] < values[n][COMPONENT] ||
-            new_values[COMPONENT] == values[n][COMPONENT] && new_values[MOVES_LEFT] > values[n][MOVES_LEFT]) {
+            (new_values[COMPONENT] == values[n][COMPONENT] && new_values[MOVES_LEFT] > values[n][MOVES_LEFT])) {
             values[n] = new_values;
         }
 
@@ -145,42 +145,208 @@ public:
         }
     }
 
-    int compute_node_priority(node_t node, vector<bool> visited) {
-        int moves = 0;
-        if (is_special(node)) return moves;
+    int dist_nearest_special_node_in_component(node_t node, vector<bool> visited, node_t &s_node) {
+        int dist = 0;
+        s_node = node;
+        if (is_special(node)) return dist;
+        dist++;
 
         queue<node_t> q, next_q;
         q.push(node);
 
-        moves++;
         while (!q.empty()) {
-            if (moves > values[node][MOVES_LEFT]) break;
-
+            if (dist > values[node][MOVES_LEFT]) break;
             node_t n = q.front();
             q.pop();
 
             for (const auto &next: adj_list[n]) {
                 if (!visited[next]) {
+                    visited[next] = true;
+
                     if (is_special(next)) {
-                        return moves;
-                    } else {
-                        visited[next] = true;
-                        next_q.push(next);
+                        s_node = next;
+                        return dist;
                     }
+
+                    next_q.push(next);
                 }
             }
 
             if (q.empty()) {
-                moves++;
+                dist++;
                 q = next_q;
                 next_q = queue<node_t>();
             }
         }
 
-        return INT_INF - values[node][MOVES_LEFT];
+        return INT_INF;
+    }
+
+    vector<vector<node_t>> get_component_special_nodes() {
+        vector<vector<node_t>> csn;
+        vector<bool> component_node_visited(1 + n_special_nodes, false);
+
+        if (n_special_nodes == 0) csn.push_back({1});
+
+        for (int adj_list_node = 1; adj_list_node <= n_special_nodes; ++adj_list_node) {
+            if (component_node_visited[adj_list_node]) continue;
+            csn.push_back({adj_list_node});
+
+            queue<node_t> component_q;
+            component_q.push(adj_list_node);
+
+            while (!component_q.empty()) {
+                node_t component_node = component_q.front();
+                component_q.pop();
+
+                component_node_visited[component_node] = true;
+
+                queue<node_t> q, next_q;
+                q.push(component_node);
+
+                vector<bool> visited(1 + n_nodes);
+                visited[component_node] = true;
+
+                int moves_left = n_moves_per_component - 1;
+
+                while (!q.empty()) {
+                    node_t n = q.front();
+                    q.pop();
+
+                    for (const auto &next: adj_list[n]) {
+                        if (!visited[next]) {
+                            visited[next] = true;
+
+                            if (is_special(next) && !component_node_visited[next]) {
+                                component_node_visited[next] = true;
+                                component_q.push(next);
+                                csn[csn.size() - 1].push_back(next);
+                            }
+
+                            next_q.push(next);
+                        }
+                    }
+
+                    if (q.empty()) {
+                        if (moves_left == 0) break; else moves_left--;
+                        q = next_q;
+                        next_q = queue<node_t>();
+                    }
+                }
+            }
+        }
+
+        return csn;
+    }
+
+    void print_queue(queue<node_t> q) {
+        bool was_empty = q.empty();
+        while (!q.empty()) {
+            cout << q.front() << ' ';
+            q.pop();
+        }
+        if (!was_empty) cout << '\n';
     }
 
     void modified_bfs(Graph::node_t n) {
+        vector<bool> visited(1 + n_nodes, false);
+        visited[n] = true;
+
+        queue<node_t> q, next_q, end_q;
+        q.push(n);
+
+        values[n][SpecialGraph::MOVES_LEFT] = n_moves_per_component;
+        values[n][SpecialGraph::COMPONENT] = 0;
+
+        vector<vector<node_t>> csn = get_component_special_nodes();
+        bool first_component = true;
+        bool is_end = false;
+        int comp = 0;
+
+        int DEBUG = 0;
+
+        while (true) {
+            if ((q.empty() || first_component) && !is_end) {
+                if (next_q.empty() && !first_component) {
+                    is_end = true;
+
+                    while(!end_q.empty()) {
+                        q.push(end_q.front());
+                        end_q.pop();
+                    }
+
+                    goto leave_condition;
+                }
+
+                n = !first_component ? next_q.front() : q.front();
+                first_component = false;
+                node_t special_node;
+
+                if (dist_nearest_special_node_in_component(n, visited, special_node) != INT_INF) {
+                    int csn_idx = -1;
+                    for (int i = 0; i < csn.size(); ++i) {
+                        for (const auto &comp_node: csn[i]) {
+                            if (comp_node == special_node) {
+                                csn_idx = i;
+                                goto loop_end;
+                            }
+                        }
+                    }
+                    loop_end:;
+
+                    q = queue<node_t>();
+                    for (const auto &comp_node: csn[csn_idx]) {
+                        q.push(comp_node);
+                        values[comp_node][MOVES_LEFT] = n_moves_per_component;
+                        values[comp_node][COMPONENT] = comp;
+                        visited[comp_node] = true;
+                    }
+
+                    while (!next_q.empty()) {
+                        end_q.push(next_q.front());
+                        next_q.pop();
+                    }
+                } else {
+                    q = next_q;
+                }
+                next_q = queue<node_t>();
+
+                if (DEBUG && !q.empty()) cout << "-------------------- New depth --------------------" << '\n';
+            }
+
+            leave_condition:
+
+            if (DEBUG) print_queue(q);
+            n = q.front();
+            q.pop();
+
+            for (const auto &next: adj_list[n]) {
+                explore_node(next, n);
+
+                if (!visited[next]) {
+                    visited[next] = true;
+
+                    if (in_same_component(next, n) || is_end) {
+                        q.push(next);
+                    } else {
+                        next_q.push(next);
+                    }
+
+//                    if (DEBUG) cout << "+(" << e[PriorityQueue::VALUE] << "," << e[PriorityQueue::PRIORITY] << ")" << '\n';
+                }
+            }
+
+            if (q.empty()) {
+                if (next_q.empty() && end_q.empty()) {
+                    break;
+                }
+                comp++;
+            }
+        }
+
+    }
+
+    void modified_bfs_xxx(Graph::node_t n) {
         vector<bool> visited(1 + n_nodes, false);
         visited[n] = true;
 
@@ -192,6 +358,8 @@ public:
 
         int DEBUG = 0;
 
+        bool searching_special_nodes = true;
+
         while(!pq.empty()) {
             if (DEBUG) {
                 pq.print();
@@ -200,41 +368,48 @@ public:
             }
 
             bool best_node_found = false;
+            bool special_node_in_component_found;
 
-            while (!best_node_found) {
-                PriorityQueue::elem_t pq_elem = pq.pop();
-                n = pq_elem[PriorityQueue::VALUE];
-                int real_priority = compute_node_priority(n, visited);
-
-                if (pq_elem[PriorityQueue::PRIORITY] == real_priority) {
-                    best_node_found = true;
-                } else {
-                    pq.push({pq_elem[PriorityQueue::VALUE], real_priority});
-                }
-            }
-
-            for (const auto &next: adj_list[n]) {
-                explore_node(next, n);
-
-                if (!visited[next]) {
-                    visited[next] = true;
-                    PriorityQueue::elem_t e{next, compute_node_priority(next, visited)};
-
-                    if (in_same_component(next, n)) {
-                        pq.push(e);
-                    } else {
-                        next_pq.push(e);
-                    }
-
-//                    if (DEBUG) cout << "+(" << e[PriorityQueue::VALUE] << "," << e[PriorityQueue::PRIORITY] << ")" << '\n';
-                }
-            }
+//            while (!best_node_found) {
+//                PriorityQueue::elem_t pq_elem = pq.pop();
+//                n = pq_elem[PriorityQueue::VALUE];
+////                int real_priority = compute_node_priority(n, visited, special_node_in_component_found);
+//
+//                if (pq_elem[PriorityQueue::PRIORITY] == real_priority) {
+//                    best_node_found = true;
+//                } else {
+//                    pq.push({pq_elem[PriorityQueue::VALUE], real_priority});
+//                }
+//            }
+//
+//            for (const auto &next: adj_list[n]) {
+//                explore_node(next, n);
+//
+//                if (!visited[next]) {
+//                    visited[next] = true;
+//
+//                    int priority = compute_node_priority(next, visited, special_node_in_component_found);
+//                    PriorityQueue::elem_t e{next, priority};
+//
+//                    if (in_same_component(next, n)) {
+//                        if (special_node_in_component_found && priority != 0) {
+//                            visited[next] = false;
+//                        }
+//                        pq.push(e);
+//                    } else {
+//                        next_pq.push(e);
+//                    }
+//
+////                    if (DEBUG) cout << "+(" << e[PriorityQueue::VALUE] << "," << e[PriorityQueue::PRIORITY] << ")" << '\n';
+//                }
+//            }
 
             if (pq.empty()) {
-                if (DEBUG && !pq.empty()) cout << "-------------------- New depth --------------------" << '\n';
+                if (DEBUG && !next_pq.empty()) cout << "-------------------- New depth --------------------" << '\n';
 
                 pq = next_pq;
                 next_pq = PriorityQueue();
+                searching_special_nodes = true;
             }
         }
     }
