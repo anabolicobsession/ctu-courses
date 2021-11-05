@@ -210,7 +210,7 @@ public:
         visited[n] = true;
         set_values(n, moves_per_component, 0);
 
-        vector<bool> special_enqueued(1 + n_special_nodes, false);
+        vector<bool> special_visited(1 + n_special_nodes, false);
 
         int DEBUG = 0;
 
@@ -218,27 +218,53 @@ public:
             n = q.front();
             q.pop();
 
-            if (is_special(n) && !special_enqueued[n]) {
-                special_enqueued[n] = true;
+            if (is_special(n) && !special_visited[n]) {
+                special_visited[n] = true;
 
-                vector<bool> boom_visited(1 + n_nodes, false);
-                queue<node_t> boom_next_q;
-                make_local_boom(n, boom_visited, boom_next_q);
+                queue<node_t> local_q;
+                local_q.push(n);
 
-                next_q = merge_queues(next_q, boom_next_q);
-                visited = merge_visited(visited, boom_visited);
-            }
+                vector<bool> local_visited(1 + n_nodes, false);
+                local_visited[n] = true;
 
-            for (const auto &next: adj_list[n]) {
-                explore_node(next, n);
+                while (!local_q.empty()) {
+                    n = local_q.front();
+                    local_q.pop();
 
-                if (!visited[next]) {
-                    visited[next] = true;
+                    for (const auto &next: adj_list[n]) {
+                        explore_node(next, n); // move down
 
-                    if (in_same_component(next, n)) {
-                        q.push(next);
-                    } else {
-                        next_q.push(next);
+                        if (!local_visited[next]) {
+
+                            if (in_same_component(next, n)) {
+                                if (is_special(next)) {
+                                    q.push(next);
+                                } else {
+                                    local_q.push(next);
+                                }
+                            } else {
+                                if (!visited[next]) {
+                                    next_q.push(next);
+                                }
+                            }
+
+                            local_visited[next] = true;
+                            visited[next] = true;
+                        }
+                    }
+                }
+            } else {
+                for (const auto &next: adj_list[n]) {
+                    explore_node(next, n); // move down
+
+                    if (!visited[next]) {
+                        visited[next] = true;
+
+                        if (in_same_component(next, n)) {
+                            q.push(next);
+                        } else {
+                            next_q.push(next);
+                        }
                     }
                 }
             }
