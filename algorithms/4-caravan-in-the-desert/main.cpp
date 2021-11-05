@@ -203,75 +203,82 @@ public:
     }
 
     void modified_bfs(Graph::node_t n) {
-        queue<node_t> q, next_q;
-        q.push(n);
+        queue<node_t> q, sn_q, next_q;
+        sn_q.push(n);
 
-        vector<bool> visited(1 + n_nodes, false);
+        vector<bool> visited(1 + n_nodes, false), sn_visited;
         visited[n] = true;
         set_values(n, moves_per_component, 0);
 
-        vector<bool> special_visited(1 + n_special_nodes, false);
+        // O(): MOVES1 < MOVES2 => no continue
 
-        int DEBUG = 0;
+        bool sn_mode = false;
+        int DEBUG = 1;
 
-        while (!q.empty()) {
-            n = q.front();
-            q.pop();
+        while (!q.empty() || !sn_q.empty()) {
+            bool node_found = false;
 
-            if (is_special(n) && !special_visited[n]) {
-                special_visited[n] = true;
+            while (!node_found && !q.empty()) {
+                n = q.front();
+                q.pop();
 
-                queue<node_t> local_q;
-                local_q.push(n);
-
-                vector<bool> local_visited(1 + n_nodes, false);
-                local_visited[n] = true;
-
-                while (!local_q.empty()) {
-                    n = local_q.front();
-                    local_q.pop();
-
-                    for (const auto &next: adj_list[n]) {
-                        explore_node(next, n); // move down
-
-                        if (!local_visited[next]) {
-
-                            if (in_same_component(next, n)) {
-                                if (is_special(next)) {
-                                    q.push(next);
-                                } else {
-                                    local_q.push(next);
-                                }
-                            } else {
-                                if (!visited[next]) {
-                                    next_q.push(next);
-                                }
-                            }
-
-                            local_visited[next] = true;
-                            visited[next] = true;
-                        }
-                    }
+                // O(): Then take n again from q
+                if (!is_special(n)) {
+                    node_found = true;
+                } else {
+                    sn_q.push(n);
                 }
-            } else {
-                for (const auto &next: adj_list[n]) {
-                    explore_node(next, n); // move down
 
-                    if (!visited[next]) {
-                        visited[next] = true;
+//                if (q.empty() && sn_mode) {
+//                    sn_mode = false;
+//                }
+            }
 
-                        if (in_same_component(next, n)) {
+            if (!node_found) {
+                n = sn_q.front();
+                sn_q.pop();
+
+                sn_mode = true;
+                sn_visited = vector<bool>(1 + n_nodes, false);
+                sn_visited[n] = true;
+            }
+
+            for (const auto &next: adj_list[n]) {
+                explore_node(next, n); // move down
+
+                if (!visited[next]) {
+                    if (in_same_component(next, n)) {
+                        q.push(next);
+                    } else {
+                        next_q.push(next);
+                    }
+
+                    visited[next] = true;
+                }
+                else if (sn_mode && !sn_visited[next]) {
+
+                    if (in_same_component(next, n)) {
+                        if (!is_special(next) || (is_special(next) && !visited[next])) {
                             q.push(next);
-                        } else {
+                        }
+                    } else {
+                        if (!visited[next]) {
                             next_q.push(next);
                         }
                     }
+
+                    sn_visited[next] = true;
+                    visited[next] = true;
                 }
             }
 
-            if (q.empty()) {
+            if (q.empty() && sn_q.empty()) {
                 q = next_q;
                 next_q = queue<node_t>();
+
+                if (sn_mode) {
+                    sn_mode = false;
+                }
             }
         }
     }
