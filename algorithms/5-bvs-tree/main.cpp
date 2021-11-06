@@ -70,6 +70,11 @@ private:
         return 1 + max(find_depth(n->left), find_depth(n->right));
     }
 
+    int find_number_of_nodes(Node *n) const {
+        if (n == nullptr) return 0;
+        return 1 + find_number_of_nodes(n->left) + find_number_of_nodes(n->right);
+    }
+
     Node* find_min(Node *n) const {
         if (n == nullptr) {
             return nullptr;
@@ -107,6 +112,10 @@ public:
 
     int find_depth() const {
         return find_depth(root);
+    }
+
+    int find_number_of_nodes() const {
+        return find_number_of_nodes(root);
     }
 
     friend ostream& operator<<(ostream &os, const BinarySearchTree &bst) {
