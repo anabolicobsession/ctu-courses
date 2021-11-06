@@ -1,7 +1,6 @@
  #include <iostream>
 #include <algorithm>
 #include <queue>
-#include <limits>
 
 #include "utils.h"
 
@@ -11,7 +10,6 @@ class BinarySearchTree {
 
 private:
     typedef int key_t;
-    static const key_t KEY_POSITIVE_INF = numeric_limits<key_t>::max();
 
     struct Node {
         key_t key;
@@ -58,21 +56,44 @@ private:
     }
 
     Node* remove(Node *n, key_t k) {
-        Node *tmp;
-        if (n == nullptr) {
-            return nullptr;
-        } else if (k < n->key) {
-            n->left = remove(n->left, k);
-        } else if (k > n->key) {
-            n->right = remove(n->right, k);
-        } else if (n->left != nullptr && n->right != nullptr) {
-            tmp = find_min(n->right);
-            n->key = tmp->key;
-            n->right = remove(n->right, n->key);
-        } else {
-            tmp = n;
-            n = n->left != nullptr ? n->left : n->right;
-            delete tmp;
+        if (n != nullptr) {
+            Node *tmp;
+            if (k < n->key) {
+                n->left = remove(n->left, k);
+            } else if (k > n->key) {
+                n->right = remove(n->right, k);
+            } else if (n->left != nullptr && n->right != nullptr) {
+                tmp = find_min(n->right);
+                n->key = tmp->key;
+                n->right = remove(n->right, n->key);
+            } else {
+                tmp = n;
+                n = n->left != nullptr ? n->left : n->right;
+                delete tmp;
+            }
+        }
+
+        return n;
+    }
+
+    Node *remove_right(Node *n, key_t start, key_t end) {
+        if (start > end) return n;
+        n->right = remove_right(n->right, start + 1, end);
+        n = remove(n, start);
+        return n;
+    }
+
+    Node* remove(Node *n, key_t start, key_t end) {
+        if (n != nullptr) {
+            if (end < n->key) {
+                n->left = remove(n->left, start, end);
+            } else if (start > n->key) {
+                n->right = remove(n->right, start, end);
+            } else {
+                if (start < n->key) n->left = remove(n->left, start, n->key - 1);
+                if (n->key < end) n->right = remove(n->right, n->key + 1, end);
+                n = remove(n, n->key);
+            }
         }
 
         return n;
@@ -135,6 +156,10 @@ public:
         root = remove(root, k);
     }
 
+    void remove(key_t start, key_t end) {
+        root = remove(root, start, end);
+    }
+
     int find_depth() const {
         return find_depth(root);
     }
@@ -176,9 +201,7 @@ int main() {
         char op = utils::get_letter();
         int start = utils::get_integer();
         int end = utils::get_integer();
-
-        if (op == 'i') bst.insert(start, end);
-        else for (int k = start; k <= end; ++k) bst.remove(k);
+        if (op == 'i') bst.insert(start, end); else bst.remove(start, end);
     }
 
     cout << bst.find_number_of_nodes() << ' ' << bst.find_depth() << '\n';
