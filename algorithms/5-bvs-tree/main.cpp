@@ -31,9 +31,9 @@ private:
         return n;
     }
 
-    int get_depth(Node *n) {
+    int find_depth(Node *n) const {
         if (n == nullptr) return -1;
-        return 1 + max(get_depth(n->left), get_depth(n->right));
+        return 1 + max(find_depth(n->left), find_depth(n->right));
     }
 
 public:
@@ -43,8 +43,8 @@ public:
         root = insert(root, key);
     }
 
-    int get_depth() {
-        return get_depth(root);
+    int find_depth() const {
+        return find_depth(root);
     }
 
 };
