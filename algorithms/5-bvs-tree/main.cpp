@@ -1,7 +1,7 @@
 #include <iostream>
 #include <algorithm>
-#include <limits>
 #include <queue>
+#include <limits>
 
 #include "utils.h"
 
@@ -11,7 +11,6 @@ class BinarySearchTree {
 
 private:
     typedef int key_t;
-    static const key_t KEY_NEGATIVE_INF = numeric_limits<key_t>::min();
     static const key_t KEY_POSITIVE_INF = numeric_limits<key_t>::max();
 
     struct Node {
@@ -36,8 +35,29 @@ private:
         return n;
     }
 
+    // node instead of integer upper boudn
+    Node* insert(Node *n, key_t start, key_t end, key_t upper_bound=KEY_POSITIVE_INF) {
+        if (n == nullptr) {
+            for (int k = start; k <= end; ++k) {
+                if (k == upper_bound) {
+                    insert(root, k, end);
+                    break;
+                }
+                n = insert(n, k);
+            }
+        } else if (start < n->key) {
+            n->left = insert(n->left, start, end, n->key);
+        } else if (start > n->key) {
+            n->right = insert(n->right, start, end, upper_bound);
+        } else {
+            n->right = insert(n->right, start + 1, end, upper_bound);
+        }
+
+        return n;
+    }
+
     Node* remove(Node *n, key_t k) {
-        Node *t;
+        Node *tmp;
         if (n == nullptr) {
             return nullptr;
         } else if (k < n->key) {
@@ -45,13 +65,13 @@ private:
         } else if (k > n->key) {
             n->right = remove(n->right, k);
         } else if (n->left != nullptr && n->right != nullptr) {
-            t = find_min(n->right);
-            n->key = t->key;
+            tmp = find_min(n->right);
+            n->key = tmp->key;
             n->right = remove(n->right, n->key);
         } else {
-            t = n;
+            tmp = n;
             n = n->left != nullptr ? n->left : n->right;
-            delete t;
+            delete tmp;
         }
 
         return n;
@@ -104,6 +124,10 @@ public:
 
     void insert(key_t k) {
         root = insert(root, k);
+    }
+
+    void insert(key_t start, key_t end) {
+        root = insert(root, start, end);
     }
 
     void remove(key_t k) {
