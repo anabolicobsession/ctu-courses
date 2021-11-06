@@ -1,4 +1,6 @@
 #include <iostream>
+#include <algorithm>
+#include <limits>
 
 #include "utils.h"
 
@@ -8,6 +10,8 @@ class BinarySearchTree {
 
 private:
     typedef int key_t;
+    static const key_t KEY_NEGATIVE_INF = numeric_limits<key_t>::min();
+    static const key_t KEY_POSITIVE_INF = numeric_limits<key_t>::max();
 
     struct Node {
         key_t key;
@@ -36,6 +40,16 @@ private:
         return 1 + max(find_depth(n->left), find_depth(n->right));
     }
 
+    key_t find_min(Node *n) const {
+        if (n == nullptr) return KEY_POSITIVE_INF;
+        return min({n->key, find_min(n->left), find_min(n->right)});
+    }
+
+    key_t find_max(Node *n) const {
+        if (n == nullptr) return KEY_NEGATIVE_INF;
+        return max({n->key, find_max(n->left), find_max(n->right)});
+    }
+
 public:
     BinarySearchTree() : root(nullptr) {}
 
@@ -45,6 +59,14 @@ public:
 
     int find_depth() const {
         return find_depth(root);
+    }
+
+    key_t find_min() const {
+        return find_min(root);
+    }
+
+    key_t find_max() const {
+        return find_max(root);
     }
 
 };
