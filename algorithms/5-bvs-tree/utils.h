@@ -1,5 +1,7 @@
-#ifndef UTILS_H_
-#define UTILS_H_
+#ifndef UTILS_H
+#define UTILS_H
+
+namespace utils {
 
 /**
  * Read one non-negative integer from standard input, ignoring any non-digit characters.
@@ -9,4 +11,6 @@
  */
 int get_integer_from_stdin();
 
-#endif //UTILS_H_
+}
+
+#endif // UTILS_H

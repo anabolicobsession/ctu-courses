@@ -2,6 +2,8 @@
 
 const int INT_MAX_LEN = 10;
 
+namespace utils {
+
 int get_integer_from_stdin() {
     unsigned char str[INT_MAX_LEN];
     int c, i = 0;
@@ -20,3 +22,5 @@ int get_integer_from_stdin() {
 
     return m != 1 ? num : EOF;
 }
+
+} // namespace utils
