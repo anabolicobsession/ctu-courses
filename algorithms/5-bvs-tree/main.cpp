@@ -36,6 +36,27 @@ private:
         return n;
     }
 
+    Node* remove(Node *n, key_t k) {
+        Node *t;
+        if (n == nullptr) {
+            return nullptr;
+        } else if (k < n->key) {
+            n->left = remove(n->left, k);
+        } else if (k > n->key) {
+            n->right = remove(n->right, k);
+        } else if (n->left != nullptr && n->right != nullptr) {
+            t = find_min(n->right);
+            n->key = t->key;
+            n->right = remove(n->right, n->key);
+        } else {
+            t = n;
+            n = n->left != nullptr ? n->left : n->right;
+            delete t;
+        }
+
+        return n;
+    }
+
     void clear(Node *n) {
         if (n != nullptr) {
             clear(n->left);
@@ -74,6 +95,14 @@ public:
 
     ~BinarySearchTree() {
         clear(root);
+    }
+
+    void insert(key_t k) {
+        root = insert(root, k);
+    }
+
+    void remove(key_t k) {
+        root = remove(root, k);
     }
 
     int find_depth() const {
