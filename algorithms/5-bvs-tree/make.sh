@@ -3,7 +3,7 @@
 ARG_TEST="test"
 TEST_DIR="datapub"
 TEST_IN_DIR_PREFIX="pub"
-EXEC="cmake-build-debug/hw5"
+EXEC="cmake-build-debug/main"
 TEST_PREFIX="$TEST_DIR/$TEST_IN_DIR_PREFIX"
 
 ARG_ZIP="zip"

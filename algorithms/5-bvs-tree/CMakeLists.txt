@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.20)
-project(hw5-interval-operations-in-bvs)
+project(hw5-interval-operations-in-bst)
 
 set(CMAKE_CXX_STANDARD 14)
 
-add_executable(hw5 main.cpp utils.cpp)
+add_executable(main main.cpp utils.cpp)
