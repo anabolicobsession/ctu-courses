@@ -5,8 +5,6 @@ const int INT_MAX_LEN = 10;
 
 namespace utils {
 
-namespace stdin {
-
     int get_integer() {
         unsigned char str[INT_MAX_LEN];
         int c, i = 0;
@@ -31,7 +29,5 @@ namespace stdin {
         do c = std::getchar(); while (!std::isalpha(c));
         return char(c);
     }
-
-} // namespace stdin
 
 } // namespace utils
