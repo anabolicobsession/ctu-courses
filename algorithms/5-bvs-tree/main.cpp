@@ -36,6 +36,14 @@ private:
         return n;
     }
 
+    void clear(Node *n) {
+        if (n != nullptr) {
+            clear(n->left);
+            clear(n->right);
+            delete n;
+        }
+    }
+
     int find_depth(Node *n) const {
         if (n == nullptr) return -1;
         return 1 + max(find_depth(n->left), find_depth(n->right));
@@ -53,6 +61,10 @@ private:
 
 public:
     BinarySearchTree() : root(nullptr) {}
+
+    ~BinarySearchTree() {
+        clear(root);
+    }
 
     void insert(int key) {
         root = insert(root, key);
