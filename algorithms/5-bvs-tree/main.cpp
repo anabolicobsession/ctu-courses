@@ -148,10 +148,9 @@ int main() {
     cin >> n_ops;
 
     for (int i = 0; i < n_ops; ++i) {
-        char op;
-        cin >> op;
-        int start = utils::get_integer_from_stdin();
-        int end = utils::get_integer_from_stdin();
+        char op = utils::stdin::get_letter();
+        int start = utils::stdin::get_integer();
+        int end = utils::stdin::get_integer();
 
         for (int k = start; k <= end; ++k) {
             if (op == 'i') bst.insert(k); else bst.remove(k);
