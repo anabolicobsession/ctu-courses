@@ -31,19 +31,25 @@ private:
         return n;
     }
 
+    int get_depth(Node *n) {
+        if (n == nullptr) return -1;
+        return 1 + max(get_depth(n->left), get_depth(n->right));
+    }
+
 public:
     BinarySearchTree() : root(nullptr) {}
 
     void insert(int key) {
         root = insert(root, key);
     }
+
+    int get_depth() {
+        return get_depth(root);
+    }
+
 };
 
 int main() {
-    BinarySearchTree bst;
-    bst.insert(3);
-    bst.insert(2);
-    bst.insert(1);
 
     return 0;
 }
