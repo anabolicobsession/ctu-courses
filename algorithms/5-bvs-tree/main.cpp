@@ -1,6 +1,7 @@
 #include <iostream>
 #include <algorithm>
 #include <limits>
+#include <queue>
 
 #include "utils.h"
 
@@ -67,6 +68,38 @@ public:
 
     key_t find_max() const {
         return find_max(root);
+    }
+
+    friend ostream& operator<<(ostream &os, const BinarySearchTree &bst) {
+        queue<Node*> q, next_q;
+        if (bst.root != nullptr) q.push(bst.root);
+
+        while (!q.empty()) {
+            Node *n = q.front();
+            q.pop();
+
+            os << n->key;
+            if (n->left || n->right) os << "(";
+            if (n->left) {
+                os << n->left->key;
+                next_q.push(n->left);
+            }
+            if (n->left && n->right) os << ",";
+            if (n->right) {
+                os << n->right->key;
+                next_q.push(n->right);
+            }
+            if (n->left || n->right) os << ")";
+            os << " ";
+
+            if (q.empty()) {
+                q = next_q;
+                next_q = queue<Node*>();
+                os << '\n';
+            }
+        }
+
+        return os;
     }
 
 };
