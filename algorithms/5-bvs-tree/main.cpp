@@ -49,14 +49,24 @@ private:
         return 1 + max(find_depth(n->left), find_depth(n->right));
     }
 
-    key_t find_min(Node *n) const {
-        if (n == nullptr) return KEY_POSITIVE_INF;
-        return min({n->key, find_min(n->left), find_min(n->right)});
+    Node* find_min(Node *n) const {
+        if (n == nullptr) {
+            return nullptr;
+        } else if (n->left == nullptr) {
+            return n;
+        }
+
+        return find_min(n->left);
     }
 
-    key_t find_max(Node *n) const {
-        if (n == nullptr) return KEY_NEGATIVE_INF;
-        return max({n->key, find_max(n->left), find_max(n->right)});
+    Node* find_max(Node *n) const {
+        if (n == nullptr) {
+            return nullptr;
+        } else if (n->right == nullptr) {
+            return n;
+        }
+
+        return find_min(n->right);
     }
 
 public:
@@ -66,20 +76,8 @@ public:
         clear(root);
     }
 
-    void insert(int key) {
-        root = insert(root, key);
-    }
-
     int find_depth() const {
         return find_depth(root);
-    }
-
-    key_t find_min() const {
-        return find_min(root);
-    }
-
-    key_t find_max() const {
-        return find_max(root);
     }
 
     friend ostream& operator<<(ostream &os, const BinarySearchTree &bst) {
@@ -90,19 +88,9 @@ public:
             Node *n = q.front();
             q.pop();
 
-            os << n->key;
-            if (n->left || n->right) os << "(";
-            if (n->left) {
-                os << n->left->key;
-                next_q.push(n->left);
-            }
-            if (n->left && n->right) os << ",";
-            if (n->right) {
-                os << n->right->key;
-                next_q.push(n->right);
-            }
-            if (n->left || n->right) os << ")";
-            os << " ";
+            os << n->key << ' ';
+            if (n->left) next_q.push(n->left);
+            if (n->right) next_q.push(n->right);
 
             if (q.empty()) {
                 q = next_q;
