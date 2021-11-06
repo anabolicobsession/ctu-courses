@@ -1,4 +1,4 @@
-#include <iostream>
+ #include <iostream>
 #include <algorithm>
 #include <queue>
 #include <limits>
@@ -35,22 +35,23 @@ private:
         return n;
     }
 
-    // node instead of integer upper boudn
-    Node* insert(Node *n, key_t start, key_t end, key_t upper_bound=KEY_POSITIVE_INF) {
+    Node* insert_right(Node *n, key_t start, key_t end) {
+        if (start > end) return n;
+        n = insert(n, start);
+        n->right = insert_right(n->right, start + 1, end);
+        return n;
+    }
+
+    Node* insert(Node *n, key_t start, key_t end) {
         if (n == nullptr) {
-            for (int k = start; k <= end; ++k) {
-                if (k == upper_bound) {
-                    insert(root, k, end);
-                    break;
-                }
-                n = insert(n, k);
-            }
-        } else if (start < n->key) {
-            n->left = insert(n->left, start, end, n->key);
+            n = insert_right(n, start, end);
+        } else if (end < n->key) {
+            n->left = insert(n->left, start, end);
         } else if (start > n->key) {
-            n->right = insert(n->right, start, end, upper_bound);
+            n->right = insert(n->right, start, end);
         } else {
-            n->right = insert(n->right, start + 1, end, upper_bound);
+            if (start < n->key) n->left = insert(n->left, start, n->key - 1);
+            if (n->key < end) n->right = insert(n->right, n->key + 1, end);
         }
 
         return n;
@@ -176,9 +177,8 @@ int main() {
         int start = utils::get_integer();
         int end = utils::get_integer();
 
-        for (int k = start; k <= end; ++k) {
-            if (op == 'i') bst.insert(k); else bst.remove(k);
-        }
+        if (op == 'i') bst.insert(start, end);
+        else for (int k = start; k <= end; ++k) bst.remove(k);
     }
 
     cout << bst.find_number_of_nodes() << ' ' << bst.find_depth() << '\n';
