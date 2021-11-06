@@ -143,6 +143,22 @@ public:
 };
 
 int main() {
+    BinarySearchTree bst;
+    int n_ops;
+    cin >> n_ops;
+
+    for (int i = 0; i < n_ops; ++i) {
+        char op;
+        cin >> op;
+        int start = utils::get_integer_from_stdin();
+        int end = utils::get_integer_from_stdin();
+
+        for (int k = start; k <= end; ++k) {
+            if (op == 'i') bst.insert(k); else bst.remove(k);
+        }
+    }
+
+    cout << bst.find_number_of_nodes() << ' ' << bst.find_depth() << '\n';
 
     return 0;
 }
