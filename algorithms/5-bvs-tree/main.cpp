@@ -29,7 +29,7 @@ private:
             n->left = n->right = nullptr;
         } else if (k < n->key) {
             n->left = insert(n->left, k);
-        } else {
+        } else if (k > n->key) {
             n->right = insert(n->right, k);
         }
 
