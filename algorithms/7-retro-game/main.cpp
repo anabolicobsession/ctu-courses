@@ -1,13 +1,12 @@
 #include <iostream>
 #include <algorithm>
 #include <vector>
-#include <queue>
 
 using namespace std;
 
 class RetroGame {
 private:
-    vector<queue<int>> eggs;
+    vector<vector<int>> eggs;
     int playing_area_width, max_egg_height, n_eggs;
 
 public:
@@ -16,9 +15,8 @@ public:
     void initialize_from_stdin() {
         cin >> playing_area_width >> n_eggs;
         // one-based indexing for computation simplicity
-        eggs = vector<queue<int>>(1 + playing_area_width, queue<int>());
-
         auto tmp_eggs = vector<vector<int>>(1 + playing_area_width, vector<int>());
+
         for (int i = 0; i < n_eggs; ++i) {
             int egg_column, egg_height;
             cin >> egg_column >> egg_height;
@@ -29,11 +27,10 @@ public:
             }
         }
 
-        // construct queues from sorted arrays
+        eggs = vector<vector<int>>(1 + max_egg_height, vector<int>());
         for (int i = 1; i <= playing_area_width; ++i) {
-            sort(tmp_eggs[i].begin(), tmp_eggs[i].end());
-            for (const auto &egg: tmp_eggs[i]) {
-                eggs[i].push(egg);
+            for (const auto &egg_height: tmp_eggs[i]) {
+                eggs[egg_height].push_back(i);
             }
         }
     }
@@ -45,16 +42,10 @@ public:
         best_score[1] = 0;
 
         for (int height = 1; height <= max_egg_height; ++height) {
-            vector<int> n_eggs_at_position(1 + playing_area_width);
-            for (int i = 1; i <= playing_area_width; ++i) {
-                n_eggs_at_position[i] = !eggs[i].empty() && height == eggs[i].front();
-                if (n_eggs_at_position[i]) {
-                    eggs[i].pop();
-                }
-            }
-
-            for (int i = 1; i < playing_area_width; ++i) {
-                n_eggs_at_position[i] += n_eggs_at_position[i + 1];
+            vector<int> n_eggs_at_position(1 + playing_area_width, 0);
+            for (const auto &egg_col: eggs[height]) {
+                n_eggs_at_position[egg_col - 1]++;
+                n_eggs_at_position[egg_col]++;
             }
 
             for (int pos = 1; pos <= N_BASKET_POSITIONS; ++pos) {
