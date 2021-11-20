@@ -21,7 +21,7 @@ public:
 
         for (int i = 0; i < n_eggs; ++i) {
             int egg_column, egg_height;
-            cin >> egg_column >> egg_height;
+            scanf("%d %d\n", &egg_column, &egg_height);
             eggs[egg_column].push(egg_height);
 
             if (egg_height > max_egg_height) {
@@ -51,10 +51,9 @@ public:
 
             for (int pos = 1; pos <= N_BASKET_POSITIONS; ++pos) {
                 new_best_score[pos] = max({best_score[pos - 1], best_score[pos], best_score[pos + 1]});
-                if (new_best_score[pos] == UNDEFINED) {
-                    break;
+                if (new_best_score[pos] != UNDEFINED) {
+                    new_best_score[pos] += n_eggs_at_position[pos];
                 }
-                new_best_score[pos] += n_eggs_at_position[pos];
             }
 
             best_score = new_best_score;
