@@ -49,7 +49,7 @@ public:
             }
 
             for (int pos = 1; pos <= N_BASKET_POSITIONS; ++pos) {
-                new_best_score[pos] = max({best_score[pos - 1], best_score[pos], best_score[pos + 1]});
+                new_best_score[pos] = max(max(best_score[pos - 1], best_score[pos]), best_score[pos + 1]);
                 if (new_best_score[pos] != UNDEFINED) {
                     new_best_score[pos] += n_eggs_at_move[pos];
                 }
