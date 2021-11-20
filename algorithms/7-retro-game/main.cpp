@@ -7,25 +7,33 @@ using namespace std;
 
 class RetroGame {
 private:
-    typedef priority_queue<int, vector<int>, greater<>> priority_queue_reversed_t;
-    vector<priority_queue_reversed_t> eggs;
+    vector<queue<int>> eggs;
     int playing_area_width, max_egg_height, n_eggs;
 
 public:
     RetroGame() : playing_area_width(0), max_egg_height(0), n_eggs(0) {}
 
-    void fill_from_stdin() {
+    void initialize_from_stdin() {
         cin >> playing_area_width >> n_eggs;
         // one-based indexing for computation simplicity
-        eggs = vector<priority_queue_reversed_t>(1 + playing_area_width, priority_queue_reversed_t());
+        eggs = vector<queue<int>>(1 + playing_area_width, queue<int>());
 
+        auto tmp_eggs = vector<vector<int>>(1 + playing_area_width, vector<int>());
         for (int i = 0; i < n_eggs; ++i) {
             int egg_column, egg_height;
-            scanf("%d %d\n", &egg_column, &egg_height);
-            eggs[egg_column].push(egg_height);
+            cin >> egg_column >> egg_height;
+            tmp_eggs[egg_column].push_back(egg_height);
 
             if (egg_height > max_egg_height) {
                 max_egg_height = egg_height;
+            }
+        }
+
+        // construct queues from sorted arrays
+        for (int i = 1; i <= playing_area_width; ++i) {
+            sort(tmp_eggs[i].begin(), tmp_eggs[i].end());
+            for (const auto &egg: tmp_eggs[i]) {
+                eggs[i].push(egg);
             }
         }
     }
@@ -39,7 +47,7 @@ public:
         for (int height = 1; height <= max_egg_height; ++height) {
             vector<int> n_eggs_at_position(1 + playing_area_width);
             for (int i = 1; i <= playing_area_width; ++i) {
-                n_eggs_at_position[i] = !eggs[i].empty() && height == eggs[i].top();
+                n_eggs_at_position[i] = !eggs[i].empty() && height == eggs[i].front();
                 if (n_eggs_at_position[i]) {
                     eggs[i].pop();
                 }
@@ -56,7 +64,7 @@ public:
                 }
             }
 
-            best_score = new_best_score;
+            best_score.swap(new_best_score);
         }
 
         return *max_element(best_score.begin(), best_score.end());
@@ -65,7 +73,7 @@ public:
 
 int main() {
     RetroGame rg;
-    rg.fill_from_stdin();
+    rg.initialize_from_stdin();
     cout << rg.find_best_score() << '\n';
 
     return 0;
