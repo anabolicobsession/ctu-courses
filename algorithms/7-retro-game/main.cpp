@@ -1,5 +1,4 @@
 #include <iostream>
-#include <algorithm>
 #include <vector>
 
 using namespace std;
@@ -27,38 +26,54 @@ public:
             }
         }
 
+        // swap rows (egg positions) and columns (egg moves)
         eggs = vector<vector<int>>(1 + n_moves, vector<int>());
-        for (int i = 1; i <= playing_area_width; ++i) {
-            for (const auto &egg_height: tmp_eggs[i]) {
-                eggs[egg_height].push_back(i);
+
+        for (int egg_pos = 1; egg_pos <= playing_area_width; ++egg_pos) {
+            for (const auto &egg_move: tmp_eggs[egg_pos]) {
+                // if basket can reach position
+                if (egg_move >= egg_pos - 2) {
+                    eggs[egg_move].push_back(egg_pos);
+                }
             }
         }
     }
 
     int find_best_score() {
         const int UNDEFINED = -1;
-        const int N_BASKET_POSITIONS = playing_area_width - 1;
-        vector<int> best_score(1 + playing_area_width, UNDEFINED), new_best_score(1 + playing_area_width, UNDEFINED);
+        // manual allocation is more effective than vectors
+        int *best_score = new int[1 + playing_area_width], *new_best_score = new int[1 + playing_area_width], *n_eggs_at_pos = new int[1 + playing_area_width];
+        for (int i = 0; i <= playing_area_width; ++i) {
+            best_score[i] = new_best_score[i] = UNDEFINED;
+        }
         best_score[1] = 0;
 
         for (int move = 1; move <= n_moves; ++move) {
-            vector<int> n_eggs_at_move(1 + playing_area_width, 0);
+            for (int i = 0; i <= playing_area_width; ++i) {
+                n_eggs_at_pos[i] = 0;
+            }
+
             for (const auto &egg_pos: eggs[move]) {
-                n_eggs_at_move[egg_pos - 1]++;
-                n_eggs_at_move[egg_pos]++;
+                n_eggs_at_pos[egg_pos - 1]++;
+                n_eggs_at_pos[egg_pos]++;
             }
 
-            for (int pos = 1; pos <= N_BASKET_POSITIONS; ++pos) {
-                new_best_score[pos] = max(max(best_score[pos - 1], best_score[pos]), best_score[pos + 1]);
-                if (new_best_score[pos] != UNDEFINED) {
-                    new_best_score[pos] += n_eggs_at_move[pos];
-                }
+            for (int pos = 1; pos < playing_area_width; ++pos) {
+                new_best_score[pos] = n_eggs_at_pos[pos] + max(max(best_score[pos - 1], best_score[pos]), best_score[pos + 1]);
             }
 
-            best_score.swap(new_best_score);
+            swap(best_score, new_best_score);
         }
 
-        return *max_element(best_score.begin(), best_score.end());
+        int mx = -1;
+        for (int i = 1; i < playing_area_width; ++i) {
+            if (best_score[i] > mx) mx = best_score[i];
+        }
+        delete[] best_score;
+        delete[] new_best_score;
+        delete[] n_eggs_at_pos;
+
+        return mx;
     }
 };
 
