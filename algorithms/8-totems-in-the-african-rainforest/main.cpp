@@ -1,10 +1,40 @@
 #include <iostream>
+#include <iomanip>
 #include <limits>
 #include <numeric>
 #include <algorithm>
 #include <vector>
 
 using namespace std;
+
+void print_matrix(vector<vector<int>> M) {
+    int mx = numeric_limits<int>::min();
+    for (const auto &row: M) {
+        for (const auto &e: row) {
+            mx = max(e, mx);
+        }
+    }
+
+    int setw_val = max(3, int(to_string(mx).length()));
+    for (int i = -1; i < int(M.size()); ++i) {
+        for (int j = -1; j < int(M[0].size()); ++j) {
+            if (i == -1 && j == -1) {
+                cout << setw(setw_val) << setfill(' ') << ' ' << ' ';
+            } else if (i == -1) {
+                cout << "[" << setw(setw_val - 2) << setfill(' ') << j << "] ";
+            } else if (j == -1) {
+                cout << "[" << setw(setw_val - 2) << setfill(' ') << i << "] ";
+            } else {
+                if (M[i][j] != numeric_limits<int>::min() && M[i][j] != numeric_limits<int>::max()) {
+                    cout << setw(setw_val) << setfill(' ') << M[i][j] << ' ';
+                } else {
+                    cout << setw(setw_val) << setfill(' ') << ' ' << ' ';
+                }
+            }
+        }
+        cout << '\n';
+    }
+}
 
 class TotemVillages {
 private:
