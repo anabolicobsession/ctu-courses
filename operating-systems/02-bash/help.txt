@@ -1,0 +1,6 @@
+DESCRIPTION
+    script.sh - print brief path information, all paths must have prefix "PATH ",
+    otherwise line will be ignored
+OPTIONS
+    -h      print usage
+    -z      zip files (not symlinks or directories)

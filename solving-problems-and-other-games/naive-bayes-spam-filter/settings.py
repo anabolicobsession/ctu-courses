@@ -1,0 +1,16 @@
+SPAM_TAG = 'SPAM'
+HAM_TAG = 'OK'
+TRUTH_FNAME = '!truth.txt'
+PREDICTION_FNAME = '!prediction.txt'
+
+# for tokens
+MIN_WORD_LEN = 3
+MAX_WORD_LEN = 20
+
+# used in has_normal_letter_frequency()
+MAX_LETTERS_IN_ROW = 5  # vowels or consonants
+MIN_DIFFERENCE_BETWEEN_WORD_LEN_AND_MAX_LETTERS_IN_ROW = 2
+MIN_WORD_LEN_TO_CHECK_THIS_DIFFERENCE = 5
+
+SPAM_SHARE_OF_CONSONANTS = 0.8
+MIN_WORD_LEN_TO_CHECK_THIS_SHARE = 5
